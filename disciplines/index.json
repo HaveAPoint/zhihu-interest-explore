@@ -1,0 +1,5 @@
+[
+  { "major": "人工智能", "name": "Agent 应用开发", "slug": "agent-app-dev" },
+  { "major": "心理学", "name": "认知心理学", "slug": "cognitive-psychology" },
+  { "major": "计算机系统", "name": "分布式系统", "slug": "distributed-systems" }
+]

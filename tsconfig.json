@@ -1,0 +1,12 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/contracts" },
+    { "path": "packages/domain" },
+    { "path": "packages/fixtures" },
+    { "path": "packages/ui-tokens" },
+    { "path": "server" },
+    { "path": "web" },
+    { "path": "plugin" }
+  ]
+}

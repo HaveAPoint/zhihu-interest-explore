@@ -1,0 +1,778 @@
+{
+  "major": "心理学",
+  "name": "认知心理学",
+  "slug": "cognitive-psychology",
+  "origin": "preset",
+  "source_note": "结构参考 Robert Sternberg《认知心理学》、John Anderson《认知心理学及其启示》、E. Bruce Goldstein《认知心理学：心智、研究与日常经验》与王甦、汪安圣《认知心理学》的章节目录，并对照高校认知心理学课程大纲整理。",
+  "review_status": "draft",
+  "nodes": [
+    {
+      "id": "cognitive-psychology/root",
+      "parent_id": null,
+      "title": "认知心理学",
+      "aliases": ["cognitive psychology"],
+      "definition": "研究人如何获取、表征、加工和运用信息的心理学分支。",
+      "sort_order": 0
+    },
+
+    {
+      "id": "cognitive-psychology/research-methods",
+      "parent_id": "cognitive-psychology/root",
+      "title": "研究方法与范式",
+      "aliases": ["research methods"],
+      "definition": "用实验、脑活动测量与计算模拟等手段推断内部心理过程的方法体系。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/research-methods/behavioral-paradigms",
+      "parent_id": "cognitive-psychology/research-methods",
+      "title": "行为实验范式",
+      "aliases": ["behavioral paradigms", "reaction time methods"],
+      "definition": "通过操纵任务条件并记录反应时与正确率来推断加工阶段的实验方法。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/research-methods/behavioral-paradigms/subtraction-method",
+      "parent_id": "cognitive-psychology/research-methods/behavioral-paradigms",
+      "title": "减法反应时法",
+      "aliases": ["subtraction method", "Donders' method"],
+      "definition": "用仅相差一个加工阶段的两种任务的反应时之差来估计该阶段所需时间。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/research-methods/behavioral-paradigms/semantic-priming",
+      "parent_id": "cognitive-psychology/research-methods/behavioral-paradigms",
+      "title": "语义启动效应",
+      "aliases": ["semantic priming", "lexical decision task"],
+      "definition": "先呈现语义相关的启动词会加快随后目标词的判断速度。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/research-methods/cognitive-neuroscience",
+      "parent_id": "cognitive-psychology/research-methods",
+      "title": "认知神经科学技术",
+      "aliases": ["cognitive neuroscience methods"],
+      "definition": "借助脑活动测量技术刻画认知加工神经基础的技术集合。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/research-methods/cognitive-neuroscience/fmri",
+      "parent_id": "cognitive-psychology/research-methods/cognitive-neuroscience",
+      "title": "功能磁共振成像",
+      "aliases": ["fMRI", "BOLD signal", "功能性磁共振"],
+      "definition": "通过血氧水平依赖信号间接测量脑区活动强度的成像技术。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/research-methods/cognitive-neuroscience/erp",
+      "parent_id": "cognitive-psychology/research-methods/cognitive-neuroscience",
+      "title": "事件相关电位",
+      "aliases": ["ERP", "event-related potential"],
+      "definition": "从脑电中叠加平均得到的与特定事件时间锁定的电位波形。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/research-methods/cognitive-neuroscience/erp/n400",
+      "parent_id": "cognitive-psychology/research-methods/cognitive-neuroscience/erp",
+      "title": "N400 成分",
+      "aliases": ["N400"],
+      "definition": "对语义预期违反最为敏感的中央顶区负向脑电成分。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/research-methods/computational-modeling",
+      "parent_id": "cognitive-psychology/research-methods",
+      "title": "计算建模",
+      "aliases": ["computational modeling"],
+      "definition": "用形式化模型模拟认知过程并预测行为数据的研究途径。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/research-methods/computational-modeling/act-r",
+      "parent_id": "cognitive-psychology/research-methods/computational-modeling",
+      "title": "ACT-R 符号加工架构",
+      "aliases": ["ACT-R", "production system"],
+      "definition": "以产生式规则和陈述性组块刻画认知的统一符号加工架构。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/research-methods/computational-modeling/connectionist-pdp",
+      "parent_id": "cognitive-psychology/research-methods/computational-modeling",
+      "title": "联结主义并行分布加工模型",
+      "aliases": ["connectionism", "PDP", "parallel distributed processing"],
+      "definition": "用大量简单单元的并行联结与权重学习来解释认知的建模框架。",
+      "sort_order": 1
+    },
+
+    {
+      "id": "cognitive-psychology/perception",
+      "parent_id": "cognitive-psychology/root",
+      "title": "知觉",
+      "aliases": ["perception"],
+      "definition": "对感觉输入进行组织与解释并形成客体表征的加工过程。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/perception/pattern-recognition",
+      "parent_id": "cognitive-psychology/perception",
+      "title": "模式识别",
+      "aliases": ["pattern recognition", "object recognition"],
+      "definition": "把输入的感觉刺激与长时记忆中的表征匹配并加以归类的过程。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/perception/pattern-recognition/feature-analysis",
+      "parent_id": "cognitive-psychology/perception/pattern-recognition",
+      "title": "特征分析与鬼域模型",
+      "aliases": ["feature analysis", "Pandemonium model"],
+      "definition": "主张识别先抽取局部特征、再逐层整合为整体模式的层级模型。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/perception/pattern-recognition/recognition-by-components",
+      "parent_id": "cognitive-psychology/perception/pattern-recognition",
+      "title": "成分识别理论",
+      "aliases": ["recognition-by-components", "geon", "几何离子"],
+      "definition": "主张复杂物体由有限几何离子的组合方式来表征并据此识别。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/perception/pattern-recognition/face-inversion-effect",
+      "parent_id": "cognitive-psychology/perception/pattern-recognition",
+      "title": "面孔倒置效应",
+      "aliases": ["face inversion effect", "holistic processing"],
+      "definition": "面孔倒置后识别成绩下降的幅度远大于其他类别物体。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/perception/pattern-recognition/prosopagnosia",
+      "parent_id": "cognitive-psychology/perception/pattern-recognition",
+      "title": "面孔失认症",
+      "aliases": ["prosopagnosia", "face blindness"],
+      "definition": "基本视觉功能保留却不能辨认熟悉面孔的选择性障碍。",
+      "sort_order": 3
+    },
+    {
+      "id": "cognitive-psychology/perception/perceptual-organization",
+      "parent_id": "cognitive-psychology/perception",
+      "title": "知觉组织",
+      "aliases": ["perceptual organization", "Gestalt principles"],
+      "definition": "把零散的感觉成分整合为稳定客体与背景的组织加工。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/perception/perceptual-organization/figure-ground-segregation",
+      "parent_id": "cognitive-psychology/perception/perceptual-organization",
+      "title": "图形—背景分离",
+      "aliases": ["figure-ground segregation"],
+      "definition": "视野被划分为轮廓凸显的图形与退居其后的背景两部分。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/perception/perceptual-organization/size-constancy",
+      "parent_id": "cognitive-psychology/perception/perceptual-organization",
+      "title": "大小恒常性",
+      "aliases": ["size constancy"],
+      "definition": "视网膜投影随距离变化时仍把物体知觉为固定大小的倾向。",
+      "sort_order": 1
+    },
+
+    {
+      "id": "cognitive-psychology/attention",
+      "parent_id": "cognitive-psychology/root",
+      "title": "注意",
+      "aliases": ["attention"],
+      "definition": "对有限认知资源进行选择与分配的调节机制。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/attention/selective-attention",
+      "parent_id": "cognitive-psychology/attention",
+      "title": "选择性注意",
+      "aliases": ["selective attention", "dichotic listening"],
+      "definition": "从并行输入的多路信息中挑选部分进入深度加工的过程。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/attention/selective-attention/broadbent-filter-model",
+      "parent_id": "cognitive-psychology/attention/selective-attention",
+      "title": "过滤器模型",
+      "aliases": ["Broadbent filter model", "early selection"],
+      "definition": "主张感觉分析后按物理特征以全或无方式筛选通道的早期选择模型。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/attention/selective-attention/treisman-attenuation-model",
+      "parent_id": "cognitive-psychology/attention/selective-attention",
+      "title": "衰减模型",
+      "aliases": ["attenuation model", "Treisman"],
+      "definition": "主张未被注意通道的信号被减弱而非彻底阻断的选择模型。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/attention/visual-attention",
+      "parent_id": "cognitive-psychology/attention",
+      "title": "视觉注意",
+      "aliases": ["visual attention"],
+      "definition": "在视觉空间位置与客体之间分配注意资源的机制。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/attention/visual-attention/feature-integration-theory",
+      "parent_id": "cognitive-psychology/attention/visual-attention",
+      "title": "特征整合理论",
+      "aliases": ["feature integration theory", "FIT", "visual search"],
+      "definition": "主张特征先被平行登记、再由集中注意把特征绑定成客体的理论。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/attention/visual-attention/feature-integration-theory/illusory-conjunction",
+      "parent_id": "cognitive-psychology/attention/visual-attention/feature-integration-theory",
+      "title": "错觉性结合",
+      "aliases": ["illusory conjunction"],
+      "definition": "注意不足时把分属不同客体的特征错误绑定在一起的报告错误。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/attention/visual-attention/posner-cueing-paradigm",
+      "parent_id": "cognitive-psychology/attention/visual-attention",
+      "title": "波斯纳线索化范式",
+      "aliases": ["Posner cueing paradigm", "spatial cueing"],
+      "definition": "用位置线索的有效与无效试次测量注意定向的收益与代价。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/attention/visual-attention/inattentional-blindness",
+      "parent_id": "cognitive-psychology/attention/visual-attention",
+      "title": "非注意盲视",
+      "aliases": ["inattentional blindness"],
+      "definition": "注意被其他任务占用时对视野中显著物体视而不见的现象。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/attention/automaticity",
+      "parent_id": "cognitive-psychology/attention",
+      "title": "自动化与分配性注意",
+      "aliases": ["automaticity", "divided attention"],
+      "definition": "加工经练习变得少耗资源以及同时应对多项任务的问题。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/attention/automaticity/stroop-effect",
+      "parent_id": "cognitive-psychology/attention/automaticity",
+      "title": "斯特鲁普效应",
+      "aliases": ["Stroop effect", "color-word interference"],
+      "definition": "字义与墨色不一致时命名颜色的反应显著变慢的干扰现象。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/attention/automaticity/automatic-and-controlled-processing",
+      "parent_id": "cognitive-psychology/attention/automaticity",
+      "title": "自动加工与控制加工",
+      "aliases": ["automatic processing", "controlled processing", "两过程说"],
+      "definition": "区分不占资源、难以中止的自动加工与耗资源、可灵活调控的控制加工。",
+      "sort_order": 1
+    },
+
+    {
+      "id": "cognitive-psychology/memory",
+      "parent_id": "cognitive-psychology/root",
+      "title": "记忆",
+      "aliases": ["memory"],
+      "definition": "对信息进行编码、保持与提取的系统及其加工过程。",
+      "sort_order": 3
+    },
+    {
+      "id": "cognitive-psychology/memory/systems",
+      "parent_id": "cognitive-psychology/memory",
+      "title": "记忆系统",
+      "aliases": ["memory systems", "multi-store model"],
+      "definition": "按保持时间与表征性质划分的多重记忆存储结构。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/memory/systems/iconic-memory-partial-report",
+      "parent_id": "cognitive-psychology/memory/systems",
+      "title": "图像记忆与部分报告法",
+      "aliases": ["iconic memory", "Sperling partial report", "感觉记忆"],
+      "definition": "视觉感觉登记容量大但迅速衰退，可由部分报告法测出其真实容量。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/memory/systems/working-memory",
+      "parent_id": "cognitive-psychology/memory/systems",
+      "title": "短时记忆与工作记忆",
+      "aliases": ["short-term memory", "working memory", "Baddeley model"],
+      "definition": "在数秒内保持并操作当前信息的容量有限系统。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/memory/systems/working-memory/memory-span-seven",
+      "parent_id": "cognitive-psychology/memory/systems/working-memory",
+      "title": "短时记忆容量的神奇数字7",
+      "aliases": ["magical number seven", "memory span", "chunk"],
+      "definition": "直接记忆广度约为七个组块上下浮动的经验概括。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/memory/systems/working-memory/phonological-loop",
+      "parent_id": "cognitive-psychology/memory/systems/working-memory",
+      "title": "语音回路",
+      "aliases": ["phonological loop", "articulatory rehearsal"],
+      "definition": "以语音编码保持言语材料并靠默读复述刷新的工作记忆子系统。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/memory/systems/working-memory/visuospatial-sketchpad",
+      "parent_id": "cognitive-psychology/memory/systems/working-memory",
+      "title": "视空间画板",
+      "aliases": ["visuospatial sketchpad"],
+      "definition": "暂存并操作视觉与空间信息的工作记忆子系统。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/memory/systems/working-memory/central-executive-dual-task",
+      "parent_id": "cognitive-psychology/memory/systems/working-memory",
+      "title": "双任务范式下的中央执行器",
+      "aliases": ["central executive", "dual-task paradigm"],
+      "definition": "由两任务资源竞争揭示的负责注意分配与子系统协调的控制成分。",
+      "sort_order": 3
+    },
+    {
+      "id": "cognitive-psychology/memory/systems/long-term-memory",
+      "parent_id": "cognitive-psychology/memory/systems",
+      "title": "长时记忆",
+      "aliases": ["long-term memory", "LTM"],
+      "definition": "容量近乎无限且可长期保持的记忆存储。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/memory/systems/long-term-memory/episodic-and-semantic-memory",
+      "parent_id": "cognitive-psychology/memory/systems/long-term-memory",
+      "title": "情景记忆与语义记忆的区分",
+      "aliases": ["episodic memory", "semantic memory", "Tulving"],
+      "definition": "按是否带有具体时空情境划分的两类陈述性长时记忆。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/memory/systems/long-term-memory/procedural-memory",
+      "parent_id": "cognitive-psychology/memory/systems/long-term-memory",
+      "title": "程序性记忆",
+      "aliases": ["procedural memory", "implicit memory", "内隐记忆"],
+      "definition": "表现为技能与操作程序、难以用言语报告的记忆。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/memory/systems/long-term-memory/anterograde-amnesia-hm",
+      "parent_id": "cognitive-psychology/memory/systems/long-term-memory",
+      "title": "H.M. 病例与顺行性遗忘",
+      "aliases": ["H.M.", "anterograde amnesia", "medial temporal lobe"],
+      "definition": "双侧内侧颞叶损伤后不能形成新的陈述性记忆的经典病例证据。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/memory/processes",
+      "parent_id": "cognitive-psychology/memory",
+      "title": "记忆过程",
+      "aliases": ["memory processes", "encoding and retrieval"],
+      "definition": "决定信息能否被记住和取出的编码、保持与提取环节。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/memory/processes/levels-of-processing",
+      "parent_id": "cognitive-psychology/memory/processes",
+      "title": "加工水平说",
+      "aliases": ["levels of processing", "Craik & Lockhart"],
+      "definition": "主张记忆保持取决于编码时语义加工的深度而非复述时间。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/memory/processes/encoding-specificity",
+      "parent_id": "cognitive-psychology/memory/processes",
+      "title": "编码特异性原则",
+      "aliases": ["encoding specificity principle", "context-dependent memory"],
+      "definition": "提取线索与编码时情境越匹配，回忆成绩越好。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/memory/processes/serial-position-effect",
+      "parent_id": "cognitive-psychology/memory/processes",
+      "title": "系列位置效应",
+      "aliases": ["serial position effect", "primacy effect", "recency effect"],
+      "definition": "自由回忆中系列开头与末尾项目的成绩优于中间项目。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/memory/processes/interference-theory",
+      "parent_id": "cognitive-psychology/memory/processes",
+      "title": "前摄抑制与倒摄抑制",
+      "aliases": ["proactive interference", "retroactive interference", "interference theory"],
+      "definition": "先前或后来学习的材料干扰目标材料的提取而造成遗忘。",
+      "sort_order": 3
+    },
+    {
+      "id": "cognitive-psychology/memory/reconstruction",
+      "parent_id": "cognitive-psychology/memory",
+      "title": "记忆的重构与错误",
+      "aliases": ["false memory", "memory distortion"],
+      "definition": "记忆并非原样复制，而会被已有知识和后续信息改造。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/memory/reconstruction/bartlett-schema-reconstruction",
+      "parent_id": "cognitive-psychology/memory/reconstruction",
+      "title": "巴特莱特的图式重构",
+      "aliases": ["Bartlett", "schema", "reconstructive memory"],
+      "definition": "回忆故事时按已有文化图式对材料进行删改与合理化。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/memory/reconstruction/misinformation-effect",
+      "parent_id": "cognitive-psychology/memory/reconstruction",
+      "title": "误导信息效应",
+      "aliases": ["misinformation effect", "Loftus", "eyewitness memory"],
+      "definition": "事后接触的误导信息使人对原始事件产生错误记忆。",
+      "sort_order": 1
+    },
+
+    {
+      "id": "cognitive-psychology/knowledge-representation",
+      "parent_id": "cognitive-psychology/root",
+      "title": "知识表征",
+      "aliases": ["knowledge representation"],
+      "definition": "概念、语义关系与表象在心理上被组织和存储的形式。",
+      "sort_order": 4
+    },
+    {
+      "id": "cognitive-psychology/knowledge-representation/concepts",
+      "parent_id": "cognitive-psychology/knowledge-representation",
+      "title": "概念与范畴",
+      "aliases": ["concepts", "categorization"],
+      "definition": "把个别事物归入类别并据以推断其属性的表征单位。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/knowledge-representation/concepts/prototype-theory",
+      "parent_id": "cognitive-psychology/knowledge-representation/concepts",
+      "title": "原型理论",
+      "aliases": ["prototype theory", "Rosch"],
+      "definition": "主张范畴由最具代表性的原型表征、成员依相似度归类。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/knowledge-representation/concepts/prototype-theory/typicality-effect",
+      "parent_id": "cognitive-psychology/knowledge-representation/concepts/prototype-theory",
+      "title": "典型性效应",
+      "aliases": ["typicality effect"],
+      "definition": "典型成员的归类判断比边缘成员更快且更一致。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/knowledge-representation/concepts/exemplar-theory",
+      "parent_id": "cognitive-psychology/knowledge-representation/concepts",
+      "title": "样例理论",
+      "aliases": ["exemplar theory"],
+      "definition": "主张归类依据的是与已存储具体样例之间的相似性。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/knowledge-representation/semantic-memory-models",
+      "parent_id": "cognitive-psychology/knowledge-representation",
+      "title": "语义记忆的表征模型",
+      "aliases": ["semantic memory models"],
+      "definition": "描述概念间关系如何被存储与检索的形式化模型。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/knowledge-representation/semantic-memory-models/collins-quillian-network",
+      "parent_id": "cognitive-psychology/knowledge-representation/semantic-memory-models",
+      "title": "层级语义网络模型",
+      "aliases": ["Collins & Quillian", "hierarchical network model", "cognitive economy"],
+      "definition": "概念按上下位层级结点存储并通过属性继承实现表征经济。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/knowledge-representation/semantic-memory-models/spreading-activation",
+      "parent_id": "cognitive-psychology/knowledge-representation/semantic-memory-models",
+      "title": "激活扩散模型",
+      "aliases": ["spreading activation", "Collins & Loftus"],
+      "definition": "结点激活沿语义距离不等的连线向邻近概念扩散。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/knowledge-representation/mental-imagery",
+      "parent_id": "cognitive-psychology/knowledge-representation",
+      "title": "心理表象",
+      "aliases": ["mental imagery"],
+      "definition": "在缺少相应刺激时形成的类知觉心理表征。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/knowledge-representation/mental-imagery/mental-rotation",
+      "parent_id": "cognitive-psychology/knowledge-representation/mental-imagery",
+      "title": "心理旋转",
+      "aliases": ["mental rotation", "Shepard & Metzler"],
+      "definition": "判断旋转图形是否相同所需时间随旋转角度线性增加。",
+      "sort_order": 0
+    },
+
+    {
+      "id": "cognitive-psychology/language",
+      "parent_id": "cognitive-psychology/root",
+      "title": "语言",
+      "aliases": ["language", "psycholinguistics"],
+      "definition": "对言语符号进行理解与产生的认知加工。",
+      "sort_order": 5
+    },
+    {
+      "id": "cognitive-psychology/language/word-recognition",
+      "parent_id": "cognitive-psychology/language",
+      "title": "词汇识别",
+      "aliases": ["word recognition", "mental lexicon"],
+      "definition": "把书面或口语输入映射到心理词典中词条的过程。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/language/word-recognition/word-frequency-effect",
+      "parent_id": "cognitive-psychology/language/word-recognition",
+      "title": "词频效应",
+      "aliases": ["word frequency effect"],
+      "definition": "高频词比低频词被更快更准确地识别。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/language/word-recognition/interactive-activation-model",
+      "parent_id": "cognitive-psychology/language/word-recognition",
+      "title": "交互激活模型",
+      "aliases": ["interactive activation model", "McClelland & Rumelhart"],
+      "definition": "特征、字母与词三层结点通过兴奋与抑制的双向交互完成识别。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/language/sentence-processing",
+      "parent_id": "cognitive-psychology/language",
+      "title": "句子理解",
+      "aliases": ["sentence processing", "parsing"],
+      "definition": "对词序列进行句法分析并整合语义的在线加工。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/language/sentence-processing/garden-path-sentence",
+      "parent_id": "cognitive-psychology/language/sentence-processing",
+      "title": "花园路径句",
+      "aliases": ["garden-path sentence", "syntactic reanalysis"],
+      "definition": "局部句法偏好导致先前分析错误而必须重新分析的句子。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/language/discourse-comprehension",
+      "parent_id": "cognitive-psychology/language",
+      "title": "语篇理解",
+      "aliases": ["discourse comprehension", "text comprehension"],
+      "definition": "跨句整合信息以建立连贯表征的理解加工。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/language/discourse-comprehension/bridging-inference",
+      "parent_id": "cognitive-psychology/language/discourse-comprehension",
+      "title": "桥接推理",
+      "aliases": ["bridging inference", "anaphoric inference"],
+      "definition": "为连接前后句子而补充未明言信息的推理。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/language/discourse-comprehension/situation-model",
+      "parent_id": "cognitive-psychology/language/discourse-comprehension",
+      "title": "情境模型",
+      "aliases": ["situation model", "mental model of discourse"],
+      "definition": "读者依据语篇建构的关于所述情境的整体心理表征。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/language/production",
+      "parent_id": "cognitive-psychology/language",
+      "title": "语言产生",
+      "aliases": ["language production", "speech production"],
+      "definition": "从概念意图到发音输出的言语计划与执行过程。",
+      "sort_order": 3
+    },
+    {
+      "id": "cognitive-psychology/language/production/slip-of-the-tongue",
+      "parent_id": "cognitive-psychology/language/production",
+      "title": "口误",
+      "aliases": ["slip of the tongue", "speech error", "spoonerism"],
+      "definition": "言语计划失误造成的音素、词或语法成分错位。",
+      "sort_order": 0
+    },
+
+    {
+      "id": "cognitive-psychology/thinking",
+      "parent_id": "cognitive-psychology/root",
+      "title": "思维与推理",
+      "aliases": ["thinking", "higher cognition"],
+      "definition": "对表征进行操作以得出结论、解决问题并做出选择的高级认知。",
+      "sort_order": 6
+    },
+    {
+      "id": "cognitive-psychology/thinking/reasoning",
+      "parent_id": "cognitive-psychology/thinking",
+      "title": "推理",
+      "aliases": ["reasoning", "deductive reasoning"],
+      "definition": "依据给定前提得出结论的思维过程。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/thinking/reasoning/belief-bias-in-syllogisms",
+      "parent_id": "cognitive-psychology/thinking/reasoning",
+      "title": "三段论推理的信念偏差",
+      "aliases": ["belief bias", "syllogistic reasoning"],
+      "definition": "结论内容是否可信会干扰对其逻辑有效性的判断。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/thinking/reasoning/wason-selection-task",
+      "parent_id": "cognitive-psychology/thinking/reasoning",
+      "title": "沃森四卡问题",
+      "aliases": ["Wason selection task", "confirmation bias"],
+      "definition": "检验条件规则时人们倾向寻找证实证据而忽略可能的反例。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/thinking/problem-solving",
+      "parent_id": "cognitive-psychology/thinking",
+      "title": "问题解决",
+      "aliases": ["problem solving"],
+      "definition": "在初始状态与目标状态之间搜索可行路径的认知活动。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/thinking/problem-solving/functional-fixedness",
+      "parent_id": "cognitive-psychology/thinking/problem-solving",
+      "title": "功能固着",
+      "aliases": ["functional fixedness", "insight"],
+      "definition": "只按物体的惯常用途思考而妨碍发现新解法的倾向。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/thinking/problem-solving/means-ends-analysis",
+      "parent_id": "cognitive-psychology/thinking/problem-solving",
+      "title": "手段—目的分析",
+      "aliases": ["means-ends analysis", "problem space", "Newell & Simon"],
+      "definition": "通过缩小当前状态与目标的差距并设立子目标来搜索问题空间。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/thinking/decision-making",
+      "parent_id": "cognitive-psychology/thinking",
+      "title": "判断与决策",
+      "aliases": ["judgment and decision making", "heuristics and biases"],
+      "definition": "在不确定条件下评估概率与价值并做出选择的过程。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/thinking/decision-making/availability-heuristic",
+      "parent_id": "cognitive-psychology/thinking/decision-making",
+      "title": "可得性启发式",
+      "aliases": ["availability heuristic"],
+      "definition": "依据事例在头脑中被提取的容易程度来估计其发生概率。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/thinking/decision-making/representativeness-heuristic",
+      "parent_id": "cognitive-psychology/thinking/decision-making",
+      "title": "代表性启发式与基率忽视",
+      "aliases": ["representativeness heuristic", "base-rate neglect"],
+      "definition": "依据样本与典型印象的相似度判断概率而忽略基础比率。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/thinking/decision-making/framing-effect",
+      "parent_id": "cognitive-psychology/thinking/decision-making",
+      "title": "框架效应",
+      "aliases": ["framing effect", "prospect theory"],
+      "definition": "同一选项因被表述为获得或损失而导致偏好反转。",
+      "sort_order": 2
+    },
+
+    {
+      "id": "cognitive-psychology/executive-control",
+      "parent_id": "cognitive-psychology/root",
+      "title": "执行控制",
+      "aliases": ["executive control", "executive function", "cognitive control"],
+      "definition": "为达成目标而对认知加工进行抑制、切换与监控的调节机制。",
+      "sort_order": 7
+    },
+    {
+      "id": "cognitive-psychology/executive-control/inhibition",
+      "parent_id": "cognitive-psychology/executive-control",
+      "title": "抑制控制",
+      "aliases": ["inhibition", "inhibitory control"],
+      "definition": "压制无关信息或已启动反应的控制能力。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/executive-control/inhibition/stop-signal-task",
+      "parent_id": "cognitive-psychology/executive-control/inhibition",
+      "title": "停止信号任务的反应抑制",
+      "aliases": ["stop-signal task", "response inhibition", "SSRT"],
+      "definition": "用中途出现的停止信号测量取消已启动反应所需的时间。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/executive-control/inhibition/negative-priming",
+      "parent_id": "cognitive-psychology/executive-control/inhibition",
+      "title": "负启动",
+      "aliases": ["negative priming"],
+      "definition": "先前被忽略的刺激随后成为目标时加工反而变慢。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/executive-control/task-switching",
+      "parent_id": "cognitive-psychology/executive-control",
+      "title": "任务切换",
+      "aliases": ["task switching", "cognitive flexibility"],
+      "definition": "在不同任务规则之间转换的控制过程。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/executive-control/task-switching/switch-cost",
+      "parent_id": "cognitive-psychology/executive-control/task-switching",
+      "title": "任务切换代价",
+      "aliases": ["switch cost", "task-set reconfiguration"],
+      "definition": "切换试次的反应比重复试次更慢且更易出错。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/executive-control/task-switching/wisconsin-card-sorting-perseveration",
+      "parent_id": "cognitive-psychology/executive-control/task-switching",
+      "title": "威斯康星卡片分类中的固着错误",
+      "aliases": ["Wisconsin Card Sorting Test", "perseveration", "WCST"],
+      "definition": "分类规则改变后仍沿用旧标准反应的执行控制缺陷表现。",
+      "sort_order": 1
+    },
+    {
+      "id": "cognitive-psychology/executive-control/monitoring",
+      "parent_id": "cognitive-psychology/executive-control",
+      "title": "监控与元认知",
+      "aliases": ["monitoring", "metacognition"],
+      "definition": "对自身认知过程进行评估并据以调整策略。",
+      "sort_order": 2
+    },
+    {
+      "id": "cognitive-psychology/executive-control/monitoring/error-related-negativity",
+      "parent_id": "cognitive-psychology/executive-control/monitoring",
+      "title": "错误相关负波",
+      "aliases": ["error-related negativity", "ERN"],
+      "definition": "错误反应后额中区出现的早期负向脑电成分。",
+      "sort_order": 0
+    },
+    {
+      "id": "cognitive-psychology/executive-control/monitoring/judgment-of-learning",
+      "parent_id": "cognitive-psychology/executive-control/monitoring",
+      "title": "学习判断",
+      "aliases": ["judgment of learning", "JOL"],
+      "definition": "学习后对自己日后能否记住材料所做的主观预测。",
+      "sort_order": 1
+    }
+  ]
+}

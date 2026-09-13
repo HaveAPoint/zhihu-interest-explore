@@ -1,0 +1,20 @@
+{
+  "name": "@zhihu-explore/plugin",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build-plugin.js",
+    "dev": "node scripts/build-plugin.js --watch"
+  },
+  "dependencies": {
+    "@zhihu-explore/contracts": "*",
+    "@zhihu-explore/domain": "*",
+    "@zhihu-explore/fixtures": "*",
+    "@zhihu-explore/ui-tokens": "*",
+    "idb": "^8.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

@@ -1,0 +1,754 @@
+{
+  "major": "计算机系统",
+  "name": "分布式系统",
+  "slug": "distributed-systems",
+  "origin": "preset",
+  "source_note": "结构参考 MIT 6.5840（原 6.824）分布式系统课程大纲、Tanenbaum《Distributed Systems: Principles and Paradigms》、Cachin《Introduction to Reliable and Secure Distributed Programming》与 Kleppmann《Designing Data-Intensive Applications》的章节目录。",
+  "review_status": "draft",
+  "nodes": [
+    {
+      "id": "distributed-systems/root",
+      "parent_id": null,
+      "title": "分布式系统",
+      "aliases": ["Distributed Systems"],
+      "definition": "研究由多台通过网络协作的计算机组成的系统如何保持正确性与可用性。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/models",
+      "parent_id": "distributed-systems/root",
+      "title": "系统模型与故障假设",
+      "aliases": ["System Model", "Failure Model"],
+      "definition": "描述节点、网络与故障行为的抽象假设，是协议正确性论证的前提。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/models/failure-models",
+      "parent_id": "distributed-systems/models",
+      "title": "故障模型",
+      "aliases": ["Failure Model", "Fault Model"],
+      "definition": "对节点可能出现的异常行为方式进行分类。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/models/failure-models/crash-stop",
+      "parent_id": "distributed-systems/models/failure-models",
+      "title": "崩溃停止故障",
+      "aliases": ["Crash-Stop", "Fail-Stop"],
+      "definition": "节点故障后永久停止且不再发出任何消息。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/models/failure-models/crash-recovery",
+      "parent_id": "distributed-systems/models/failure-models",
+      "title": "崩溃恢复故障",
+      "aliases": ["Crash-Recovery"],
+      "definition": "节点崩溃后可以重启并从持久化状态继续参与协议。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/models/failure-models/byzantine-fault",
+      "parent_id": "distributed-systems/models/failure-models",
+      "title": "拜占庭故障",
+      "aliases": ["Byzantine Fault"],
+      "definition": "节点可任意偏离协议，包括发送伪造或互相矛盾的消息。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/models/timing-models",
+      "parent_id": "distributed-systems/models",
+      "title": "时序模型",
+      "aliases": ["Timing Model", "Synchrony Model"],
+      "definition": "关于消息延迟与处理速度是否存在已知上界的假设。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/models/timing-models/partial-synchrony",
+      "parent_id": "distributed-systems/models/timing-models",
+      "title": "部分同步模型",
+      "aliases": ["Partial Synchrony"],
+      "definition": "系统在某个未知时刻之后消息延迟存在上界。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/models/timing-models/flp-impossibility",
+      "parent_id": "distributed-systems/models/timing-models",
+      "title": "FLP 不可能性结论",
+      "aliases": ["FLP Impossibility", "FLP"],
+      "definition": "异步系统中即使只有一个节点会崩溃也不存在确定性共识算法。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/time-order",
+      "parent_id": "distributed-systems/root",
+      "title": "时间与事件排序",
+      "aliases": ["Time and Order"],
+      "definition": "在缺少全局时钟的系统中确定事件先后关系的方法。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/time-order/logical-clocks",
+      "parent_id": "distributed-systems/time-order",
+      "title": "逻辑时钟",
+      "aliases": ["Logical Clock"],
+      "definition": "用计数器而非物理时间刻画事件之间的因果顺序。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/time-order/logical-clocks/happens-before",
+      "parent_id": "distributed-systems/time-order/logical-clocks",
+      "title": "先发生关系",
+      "aliases": ["Happens-Before"],
+      "definition": "由同进程内顺序与消息收发共同构成的事件偏序关系。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/time-order/logical-clocks/lamport-timestamp",
+      "parent_id": "distributed-systems/time-order/logical-clocks",
+      "title": "Lamport 时间戳",
+      "aliases": ["Lamport Timestamp", "Lamport Clock"],
+      "definition": "为事件分配单调递增标量以给出与因果关系兼容的全序。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/time-order/logical-clocks/vector-clock",
+      "parent_id": "distributed-systems/time-order/logical-clocks",
+      "title": "向量时钟",
+      "aliases": ["Vector Clock"],
+      "definition": "用每节点一维的计数器向量判断两个事件是否并发。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/time-order/clock-skew",
+      "parent_id": "distributed-systems/time-order",
+      "title": "时钟偏移与漂移",
+      "aliases": ["Clock Skew", "Clock Drift"],
+      "definition": "不同节点物理时钟读数之间的差异及其随时间累积的速率。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/time-order/truetime-uncertainty",
+      "parent_id": "distributed-systems/time-order",
+      "title": "TrueTime 的有界不确定区间",
+      "aliases": ["TrueTime"],
+      "definition": "把物理时间读数表示为带误差上下界的区间以支撑全局排序。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/communication",
+      "parent_id": "distributed-systems/root",
+      "title": "通信与调用原语",
+      "aliases": ["Communication Primitives"],
+      "definition": "节点之间交换消息与发起远程调用的抽象机制。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/communication/rpc",
+      "parent_id": "distributed-systems/communication",
+      "title": "远程过程调用",
+      "aliases": ["RPC", "Remote Procedure Call"],
+      "definition": "把跨节点请求包装成本地函数调用形式的通信方式。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/communication/rpc/rpc-semantics",
+      "parent_id": "distributed-systems/communication/rpc",
+      "title": "调用语义",
+      "aliases": ["RPC Semantics", "Delivery Semantics"],
+      "definition": "在消息丢失与重试情形下远程调用被执行次数的保证。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/communication/rpc/rpc-semantics/at-most-once",
+      "parent_id": "distributed-systems/communication/rpc/rpc-semantics",
+      "title": "至多一次语义",
+      "aliases": ["At-Most-Once"],
+      "definition": "调用不会被重复执行，但失败时可能完全没有执行。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/communication/rpc/rpc-semantics/at-least-once",
+      "parent_id": "distributed-systems/communication/rpc/rpc-semantics",
+      "title": "至少一次语义",
+      "aliases": ["At-Least-Once"],
+      "definition": "通过重试保证调用最终被执行，但可能重复执行。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/communication/rpc/rpc-semantics/exactly-once",
+      "parent_id": "distributed-systems/communication/rpc/rpc-semantics",
+      "title": "恰好一次语义的实现代价",
+      "aliases": ["Exactly-Once"],
+      "definition": "需要幂等键与持久化去重表才能对外表现为只执行一次。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/communication/rpc/timeout-retry",
+      "parent_id": "distributed-systems/communication/rpc",
+      "title": "超时重试与重试风暴",
+      "aliases": ["Retry Storm", "Timeout"],
+      "definition": "客户端超时后重发请求会在服务端过载时放大流量。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/communication/total-order-broadcast",
+      "parent_id": "distributed-systems/communication",
+      "title": "全序广播",
+      "aliases": ["Total Order Broadcast", "Atomic Broadcast"],
+      "definition": "所有节点以完全相同顺序交付同一组消息的广播原语。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/communication/causal-broadcast",
+      "parent_id": "distributed-systems/communication",
+      "title": "因果广播",
+      "aliases": ["Causal Broadcast"],
+      "definition": "保证存在因果依赖的消息按依赖顺序交付的广播原语。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/replication",
+      "parent_id": "distributed-systems/root",
+      "title": "数据复制",
+      "aliases": ["Replication"],
+      "definition": "把同一份数据维护在多个节点上以提升可用性与读吞吐。",
+      "sort_order": 3
+    },
+    {
+      "id": "distributed-systems/replication/single-leader",
+      "parent_id": "distributed-systems/replication",
+      "title": "单主复制",
+      "aliases": ["Single-Leader Replication", "Primary-Backup"],
+      "definition": "所有写入先到唯一主副本再传播给从副本。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/replication/single-leader/log-shipping",
+      "parent_id": "distributed-systems/replication/single-leader",
+      "title": "基于日志的复制流",
+      "aliases": ["Log Shipping", "WAL Replication"],
+      "definition": "主副本把写前日志按序发送给从副本重放。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/replication/single-leader/sync-vs-async",
+      "parent_id": "distributed-systems/replication/single-leader",
+      "title": "同步复制与异步复制的取舍",
+      "aliases": ["Synchronous Replication", "Asynchronous Replication"],
+      "definition": "等待从副本确认可避免数据丢失但会拉长写延迟。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/replication/single-leader/failover-split-brain",
+      "parent_id": "distributed-systems/replication/single-leader",
+      "title": "故障切换与脑裂",
+      "aliases": ["Failover", "Split Brain"],
+      "definition": "主副本切换判断失误会导致两个节点同时以主身份接受写入。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/replication/multi-leader",
+      "parent_id": "distributed-systems/replication",
+      "title": "多主复制",
+      "aliases": ["Multi-Leader Replication"],
+      "definition": "多个副本都可以接受写入并互相同步变更。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/replication/multi-leader/write-conflict-detection",
+      "parent_id": "distributed-systems/replication/multi-leader",
+      "title": "写冲突检测",
+      "aliases": ["Write Conflict"],
+      "definition": "识别对同一数据项的并发写入以便后续解决。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/replication/multi-leader/crdt",
+      "parent_id": "distributed-systems/replication/multi-leader",
+      "title": "无冲突复制数据类型",
+      "aliases": ["CRDT", "Conflict-Free Replicated Data Type"],
+      "definition": "通过可交换的合并操作让副本自动收敛到同一状态。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/replication/leaderless",
+      "parent_id": "distributed-systems/replication",
+      "title": "无主复制",
+      "aliases": ["Leaderless Replication", "Dynamo-style"],
+      "definition": "客户端直接向多个副本读写而不依赖固定主节点。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/replication/leaderless/quorum-rw",
+      "parent_id": "distributed-systems/replication/leaderless",
+      "title": "读写法定人数",
+      "aliases": ["Quorum", "Read-Write Quorum"],
+      "definition": "通过约束读写涉及的副本数量来保证读到最新写入。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/replication/leaderless/quorum-rw/quorum-intersection",
+      "parent_id": "distributed-systems/replication/leaderless/quorum-rw",
+      "title": "法定人数交集条件",
+      "aliases": ["Quorum Intersection", "W+R>N"],
+      "definition": "读集合与写集合必须相交才能确保读到最近提交的写。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/replication/leaderless/quorum-rw/stale-read",
+      "parent_id": "distributed-systems/replication/leaderless/quorum-rw",
+      "title": "法定人数不足导致的陈旧读",
+      "aliases": ["Stale Read"],
+      "definition": "读写副本数之和不满足交集条件时读操作可能返回旧值。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/replication/leaderless/read-repair",
+      "parent_id": "distributed-systems/replication/leaderless",
+      "title": "读修复",
+      "aliases": ["Read Repair"],
+      "definition": "读取时发现副本落后并顺带把新值写回该副本。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/consensus",
+      "parent_id": "distributed-systems/root",
+      "title": "共识算法",
+      "aliases": ["Consensus"],
+      "definition": "让多个节点在存在故障时对同一个值或顺序达成一致。",
+      "sort_order": 4
+    },
+    {
+      "id": "distributed-systems/consensus/paxos",
+      "parent_id": "distributed-systems/consensus",
+      "title": "Paxos 家族",
+      "aliases": ["Paxos"],
+      "definition": "以提案编号与多数派承诺为核心的经典共识协议族。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/consensus/paxos/single-decree-two-phase",
+      "parent_id": "distributed-systems/consensus/paxos",
+      "title": "单决议 Paxos 的两阶段",
+      "aliases": ["Single-Decree Paxos", "Prepare-Accept"],
+      "definition": "先用准备阶段抢占提案权再用接受阶段确定取值。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/consensus/paxos/multi-paxos-stable-leader",
+      "parent_id": "distributed-systems/consensus/paxos",
+      "title": "Multi-Paxos 的稳定领导者优化",
+      "aliases": ["Multi-Paxos"],
+      "definition": "让固定领导者跳过重复的准备阶段以摊薄每条日志的开销。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/consensus/raft",
+      "parent_id": "distributed-systems/consensus",
+      "title": "Raft",
+      "aliases": ["Raft"],
+      "definition": "以领导者选举加日志复制方式组织的易理解共识算法。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/consensus/raft/leader-election",
+      "parent_id": "distributed-systems/consensus/raft",
+      "title": "领导者选举与任期",
+      "aliases": ["Leader Election", "Term"],
+      "definition": "候选者在选举超时后依靠多数票在新任期内成为领导者。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/consensus/raft/log-matching",
+      "parent_id": "distributed-systems/consensus/raft",
+      "title": "日志匹配性质",
+      "aliases": ["Log Matching Property"],
+      "definition": "两份日志若在某索引处任期相同则该索引之前的条目完全相同。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/consensus/raft/commit-rule",
+      "parent_id": "distributed-systems/consensus/raft",
+      "title": "提交规则与前任任期日志",
+      "aliases": ["Commit Rule"],
+      "definition": "领导者只能通过复制当前任期条目来间接提交旧任期的条目。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/consensus/raft/log-compaction-snapshot",
+      "parent_id": "distributed-systems/consensus/raft",
+      "title": "快照与日志压缩",
+      "aliases": ["Snapshot", "Log Compaction"],
+      "definition": "把状态机快照持久化后丢弃已被包含的日志前缀。",
+      "sort_order": 3
+    },
+    {
+      "id": "distributed-systems/consensus/byzantine-consensus",
+      "parent_id": "distributed-systems/consensus",
+      "title": "拜占庭容错共识",
+      "aliases": ["BFT", "Byzantine Consensus"],
+      "definition": "在部分节点可能作恶的前提下仍能达成一致的协议。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/consensus/byzantine-consensus/pbft-three-phase",
+      "parent_id": "distributed-systems/consensus/byzantine-consensus",
+      "title": "PBFT 三阶段协议",
+      "aliases": ["PBFT"],
+      "definition": "通过预准备、准备、提交三轮消息确定请求的执行顺序。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/consensus/byzantine-consensus/quorum-3f-plus-1",
+      "parent_id": "distributed-systems/consensus/byzantine-consensus",
+      "title": "3f+1 副本下界",
+      "aliases": ["3f+1"],
+      "definition": "容忍 f 个拜占庭节点至少需要 3f+1 个副本才能安全推进。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/consistency",
+      "parent_id": "distributed-systems/root",
+      "title": "一致性模型",
+      "aliases": ["Consistency Model"],
+      "definition": "规定并发读写在多副本系统中允许出现哪些可见结果。",
+      "sort_order": 5
+    },
+    {
+      "id": "distributed-systems/consistency/strong",
+      "parent_id": "distributed-systems/consistency",
+      "title": "强一致性模型",
+      "aliases": ["Strong Consistency"],
+      "definition": "对外表现接近单副本的严格顺序保证。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/consistency/strong/linearizability",
+      "parent_id": "distributed-systems/consistency/strong",
+      "title": "线性一致性",
+      "aliases": ["Linearizability", "Atomic Consistency"],
+      "definition": "每个操作看起来在其调用与返回之间的某一瞬间原子生效。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/consistency/strong/sequential-consistency",
+      "parent_id": "distributed-systems/consistency/strong",
+      "title": "顺序一致性",
+      "aliases": ["Sequential Consistency"],
+      "definition": "所有节点看到同一操作全序且该全序与各自程序顺序一致。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/consistency/weak",
+      "parent_id": "distributed-systems/consistency",
+      "title": "弱一致性模型",
+      "aliases": ["Weak Consistency"],
+      "definition": "放松顺序保证以换取更高可用性与更低延迟。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/consistency/weak/eventual-consistency",
+      "parent_id": "distributed-systems/consistency/weak",
+      "title": "最终一致性",
+      "aliases": ["Eventual Consistency"],
+      "definition": "停止写入后各副本经过一段时间会收敛到相同状态。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/consistency/weak/causal-consistency",
+      "parent_id": "distributed-systems/consistency/weak",
+      "title": "因果一致性",
+      "aliases": ["Causal Consistency"],
+      "definition": "存在因果依赖的操作在所有节点上按相同顺序可见。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/consistency/weak/causal-consistency/vector-clock-tracking",
+      "parent_id": "distributed-systems/consistency/weak/causal-consistency",
+      "title": "因果一致性的向量时钟实现",
+      "aliases": ["Vector Clock"],
+      "definition": "用向量时钟标记依赖并延迟交付尚未满足依赖的更新。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/consistency/weak/causal-consistency/causal-plus-convergence",
+      "parent_id": "distributed-systems/consistency/weak/causal-consistency",
+      "title": "因果加收敛一致性",
+      "aliases": ["Causal+", "Convergent Causal Consistency"],
+      "definition": "在因果顺序之外再要求并发写入按确定规则收敛到同一结果。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/consistency/cap-theorem",
+      "parent_id": "distributed-systems/consistency",
+      "title": "CAP 定理",
+      "aliases": ["CAP Theorem"],
+      "definition": "网络分区发生时系统只能在强一致性与可用性之间取其一。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/transactions",
+      "parent_id": "distributed-systems/root",
+      "title": "分布式事务",
+      "aliases": ["Distributed Transaction"],
+      "definition": "让跨多个节点的操作集合保持原子性与隔离性的机制。",
+      "sort_order": 6
+    },
+    {
+      "id": "distributed-systems/transactions/atomic-commit",
+      "parent_id": "distributed-systems/transactions",
+      "title": "原子提交协议",
+      "aliases": ["Atomic Commit"],
+      "definition": "让所有参与者对事务提交还是回滚做出一致决定。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/transactions/atomic-commit/two-phase-commit",
+      "parent_id": "distributed-systems/transactions/atomic-commit",
+      "title": "两阶段提交",
+      "aliases": ["2PC", "Two-Phase Commit"],
+      "definition": "协调者先收集参与者投票再统一下发提交或中止决定。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/transactions/atomic-commit/two-phase-commit/prepare-vote",
+      "parent_id": "distributed-systems/transactions/atomic-commit/two-phase-commit",
+      "title": "准备阶段与参与者投票",
+      "aliases": ["Prepare Phase", "Vote Request"],
+      "definition": "参与者持久化准备状态后即承诺不再单方面中止事务。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/transactions/atomic-commit/two-phase-commit/coordinator-blocking",
+      "parent_id": "distributed-systems/transactions/atomic-commit/two-phase-commit",
+      "title": "协调者故障导致的阻塞",
+      "aliases": ["Coordinator Failure", "Blocking Problem"],
+      "definition": "参与者投票后失去协调者会持有锁无限等待最终决定。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/transactions/concurrency-control",
+      "parent_id": "distributed-systems/transactions",
+      "title": "并发控制",
+      "aliases": ["Concurrency Control"],
+      "definition": "协调并发事务对共享数据的访问以保证隔离性。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/transactions/concurrency-control/two-phase-locking",
+      "parent_id": "distributed-systems/transactions/concurrency-control",
+      "title": "两阶段锁",
+      "aliases": ["2PL", "Two-Phase Locking"],
+      "definition": "事务先只加锁后只解锁从而保证调度可串行化。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/transactions/concurrency-control/mvcc",
+      "parent_id": "distributed-systems/transactions/concurrency-control",
+      "title": "多版本并发控制",
+      "aliases": ["MVCC", "Multi-Version Concurrency Control"],
+      "definition": "为数据保留多个版本使读操作不阻塞写操作。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/transactions/commit-wait",
+      "parent_id": "distributed-systems/transactions",
+      "title": "提交等待与全局时间戳",
+      "aliases": ["Commit Wait", "External Consistency"],
+      "definition": "提交前等待时间戳不确定区间过去以保证外部可见顺序正确。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/transactions/saga",
+      "parent_id": "distributed-systems/transactions",
+      "title": "Saga 补偿事务",
+      "aliases": ["Saga"],
+      "definition": "把长事务拆成一串本地事务并用补偿操作回退已完成步骤。",
+      "sort_order": 3
+    },
+    {
+      "id": "distributed-systems/partitioning",
+      "parent_id": "distributed-systems/root",
+      "title": "数据分区",
+      "aliases": ["Partitioning", "Sharding"],
+      "definition": "把数据集拆分到多个节点以突破单机容量与吞吐限制。",
+      "sort_order": 7
+    },
+    {
+      "id": "distributed-systems/partitioning/schemes",
+      "parent_id": "distributed-systems/partitioning",
+      "title": "分区方式",
+      "aliases": ["Partitioning Scheme"],
+      "definition": "决定一条数据归属哪个分区的映射规则。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/partitioning/schemes/consistent-hashing",
+      "parent_id": "distributed-systems/partitioning/schemes",
+      "title": "一致性哈希",
+      "aliases": ["Consistent Hashing"],
+      "definition": "把节点与键映射到同一哈希环使节点增减只影响相邻区间。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/partitioning/schemes/virtual-node",
+      "parent_id": "distributed-systems/partitioning/schemes",
+      "title": "虚拟节点与负载均摊",
+      "aliases": ["Virtual Node", "vnode"],
+      "definition": "让每个物理节点承载多个哈希环位置以减少负载倾斜。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/partitioning/shard-rebalancing",
+      "parent_id": "distributed-systems/partitioning",
+      "title": "分片再平衡与路由失效",
+      "aliases": ["Rebalancing", "Shard Migration"],
+      "definition": "分片迁移期间客户端缓存的路由表会指向错误的节点。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/partitioning/hot-key-skew",
+      "parent_id": "distributed-systems/partitioning",
+      "title": "热键倾斜",
+      "aliases": ["Hot Key", "Skew"],
+      "definition": "少量键承担大部分流量使单个分区成为整体瓶颈。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/fault-tolerance",
+      "parent_id": "distributed-systems/root",
+      "title": "容错与恢复",
+      "aliases": ["Fault Tolerance", "Recovery"],
+      "definition": "在部分组件失效时维持正确性并在事后恢复状态。",
+      "sort_order": 8
+    },
+    {
+      "id": "distributed-systems/fault-tolerance/failure-detection",
+      "parent_id": "distributed-systems/fault-tolerance",
+      "title": "故障检测",
+      "aliases": ["Failure Detection", "Failure Detector"],
+      "definition": "判断远端节点是否已失效的机制及其误判取舍。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/fault-tolerance/failure-detection/heartbeat-timeout",
+      "parent_id": "distributed-systems/fault-tolerance/failure-detection",
+      "title": "心跳与超时判定",
+      "aliases": ["Heartbeat", "Timeout"],
+      "definition": "依据周期性心跳缺失超过阈值来怀疑节点已经失效。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/fault-tolerance/failure-detection/phi-accrual",
+      "parent_id": "distributed-systems/fault-tolerance/failure-detection",
+      "title": "φ 累积故障检测器",
+      "aliases": ["Phi Accrual Failure Detector"],
+      "definition": "根据心跳到达时间分布输出连续可疑度而非布尔判定。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/fault-tolerance/write-ahead-log-recovery",
+      "parent_id": "distributed-systems/fault-tolerance",
+      "title": "预写日志与崩溃恢复",
+      "aliases": ["WAL", "Write-Ahead Log"],
+      "definition": "重启后重放持久化日志把状态恢复到崩溃前的提交点。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/fault-tolerance/chandy-lamport-snapshot",
+      "parent_id": "distributed-systems/fault-tolerance",
+      "title": "Chandy-Lamport 快照算法",
+      "aliases": ["Chandy-Lamport", "Distributed Snapshot"],
+      "definition": "用标记消息在不停机的情况下记录一致的全局状态。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/fault-tolerance/fencing-token",
+      "parent_id": "distributed-systems/fault-tolerance",
+      "title": "栅栏令牌",
+      "aliases": ["Fencing Token"],
+      "definition": "用单调递增令牌让存储端拒绝租约已过期节点的写入。",
+      "sort_order": 3
+    },
+    {
+      "id": "distributed-systems/storage",
+      "parent_id": "distributed-systems/root",
+      "title": "分布式存储系统",
+      "aliases": ["Distributed Storage"],
+      "definition": "把文件或键值数据分布到集群上的系统设计。",
+      "sort_order": 9
+    },
+    {
+      "id": "distributed-systems/storage/file-systems",
+      "parent_id": "distributed-systems/storage",
+      "title": "分布式文件系统",
+      "aliases": ["Distributed File System"],
+      "definition": "以文件接口对外提供跨节点存储能力的系统。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/storage/file-systems/gfs-master-chunkserver",
+      "parent_id": "distributed-systems/storage/file-systems",
+      "title": "GFS 的主控与块服务器结构",
+      "aliases": ["GFS", "Google File System"],
+      "definition": "单一主控管理元数据而数据以固定大小块存放在块服务器上。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/storage/file-systems/namenode-metadata-bottleneck",
+      "parent_id": "distributed-systems/storage/file-systems",
+      "title": "元数据节点的内存瓶颈",
+      "aliases": ["NameNode", "Metadata Bottleneck"],
+      "definition": "集中式元数据服务的内存容量限制了集群可管理的文件数量。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/storage/erasure-coding-tradeoff",
+      "parent_id": "distributed-systems/storage",
+      "title": "纠删码与多副本的取舍",
+      "aliases": ["Erasure Coding", "Reed-Solomon"],
+      "definition": "纠删码以更低存储开销换取更高的修复带宽与读延迟。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/performance",
+      "parent_id": "distributed-systems/root",
+      "title": "性能与可观测性",
+      "aliases": ["Performance", "Observability"],
+      "definition": "衡量并诊断分布式系统的延迟、吞吐与异常行为。",
+      "sort_order": 10
+    },
+    {
+      "id": "distributed-systems/performance/tail-latency",
+      "parent_id": "distributed-systems/performance",
+      "title": "尾延迟放大",
+      "aliases": ["Tail Latency", "Tail at Scale"],
+      "definition": "扇出请求需等待最慢子请求使高分位延迟随扇出度上升。",
+      "sort_order": 0
+    },
+    {
+      "id": "distributed-systems/performance/hedged-request",
+      "parent_id": "distributed-systems/performance",
+      "title": "对冲请求",
+      "aliases": ["Hedged Request"],
+      "definition": "等待超过阈值后向备份副本再发一份请求以裁剪尾延迟。",
+      "sort_order": 1
+    },
+    {
+      "id": "distributed-systems/performance/distributed-tracing-span",
+      "parent_id": "distributed-systems/performance",
+      "title": "分布式追踪的 Span 因果链",
+      "aliases": ["Distributed Tracing", "Span", "Dapper"],
+      "definition": "通过传递追踪上下文把跨服务调用串成有父子关系的调用链。",
+      "sort_order": 2
+    },
+    {
+      "id": "distributed-systems/performance/backpressure",
+      "parent_id": "distributed-systems/performance",
+      "title": "背压与过载保护",
+      "aliases": ["Backpressure", "Load Shedding"],
+      "definition": "队列积压时向上游施加压力或主动丢弃请求以避免雪崩。",
+      "sort_order": 3
+    }
+  ]
+}

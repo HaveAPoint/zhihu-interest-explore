@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "知乎兴趣探索",
+  "version": "0.0.1",
+  "description": "知乎专栏阅读中划词探索学科知识树与个人认知图谱",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://zhuanlan.zhihu.com/*",
+    "http://localhost:9000/*",
+    "https://*.tcloudbase.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://zhuanlan.zhihu.com/p/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "externally_connectable": {
+    "matches": [
+      "http://localhost:5173/*",
+      "https://*.tcloudbaseapp.com/*"
+    ]
+  },
+  "action": {
+    "default_title": "知乎兴趣探索"
+  }
+}
