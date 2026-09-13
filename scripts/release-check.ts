@@ -13,6 +13,7 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const RELEASE_ZIP_PATH = path.join(ROOT_DIR, 'web', 'public', 'downloads', 'zhihu-explore-extension.zip');
 const MANIFEST_PATH = path.join(ROOT_DIR, 'release-manifest.json');
 const WEB_DIST = path.join(ROOT_DIR, 'dist', 'web');
+const PLUGIN_DIST = path.join(ROOT_DIR, 'plugin', 'dist');
 
 const FORBIDDEN_PATTERNS = [
   /AIza[0-9A-Za-z-_]{35}/, // Google API Key
@@ -41,6 +42,39 @@ function checkDirectoryForSecrets(dir: string) {
       }
     }
   }
+}
+
+function checkNoProcessEnvInDist(dir: string) {
+  if (!fs.existsSync(dir)) return;
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory() && entry.name !== 'node_modules') {
+      checkNoProcessEnvInDist(fullPath);
+    } else if (entry.isFile() && entry.name.endsWith('.js')) {
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      if (content.includes('process.env')) {
+        throw new Error(`[RELEASE CHECK FAILED] Literal "process.env" found in browser bundle: ${fullPath}`);
+      }
+    }
+  }
+}
+
+function checkManifestSecurity(manifestPath: string) {
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error(`Missing manifest.json at ${manifestPath}`);
+  }
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+  const matches: string[] = manifest.externally_connectable?.matches || [];
+  if (matches.length === 0) {
+    throw new Error('[SECURITY ERROR] externally_connectable.matches cannot be empty');
+  }
+  for (const pattern of matches) {
+    if (pattern.includes('*.') || pattern === '*' || pattern === '<all_urls>') {
+      throw new Error(`[SECURITY ERROR] Wildcard domain in externally_connectable is forbidden: "${pattern}"`);
+    }
+  }
+  console.log('✓ manifest.json externally_connectable verified: strictly bounded (no wildcards)');
 }
 
 async function main() {
@@ -74,13 +108,22 @@ async function main() {
   }
   console.log('✓ Web dashboard dist output verified');
 
-  // 4. Scan distribution assets for leaked secrets
+  // 4. Verify manifest security in plugin dist
+  const distManifestPath = path.join(PLUGIN_DIST, 'manifest.json');
+  checkManifestSecurity(distManifestPath);
+
+  // 5. Verify no "process.env" in plugin distribution
+  console.log('Checking for unbundled process.env references in extension...');
+  checkNoProcessEnvInDist(PLUGIN_DIST);
+  console.log('✓ Zero process.env references in plugin bundles');
+
+  // 6. Scan distribution assets for leaked secrets
   console.log('Scanning build artifacts for forbidden secrets...');
   checkDirectoryForSecrets(WEB_DIST);
-  checkDirectoryForSecrets(path.join(ROOT_DIR, 'plugin', 'dist'));
+  checkDirectoryForSecrets(PLUGIN_DIST);
   console.log('✓ No hardcoded credentials detected in distribution bundles');
 
-  console.log('🎉 Release check passed successfully! All assets are valid and ready for deployment.');
+  console.log('🎉 Release check passed successfully! All assets are valid, secure, and ready for deployment.');
 }
 
 main().catch((err) => {

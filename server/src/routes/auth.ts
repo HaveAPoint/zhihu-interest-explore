@@ -2,9 +2,10 @@
 // Complies with 作者本人开发计划 §4.6, §4.7, T24, T25
 
 import type { FastifyPluginAsync } from 'fastify';
+import crypto from 'node:crypto';
 import { startZhihuOAuth, exchangeZhihuCode } from '../auth/zhihu.js';
 import { createPairingTicket, exchangePairingTicket } from '../auth/extension-pairing.js';
-import { revokeSession } from '../auth/session.js';
+import { resolveSession, revokeSession } from '../auth/session.js';
 import { z } from 'zod';
 
 const StartOAuthSchema = z.object({
@@ -28,7 +29,45 @@ const ExchangeTicketSchema = z.object({
 });
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
-  // 1. Start Zhihu OAuth
+  // 1. Browser navigation endpoint to start OAuth redirect
+  app.get<{ Querystring: { redirect_uri?: string } }>('/auth/zhihu/login', async (request, reply) => {
+    try {
+      const result = await startZhihuOAuth(request.query.redirect_uri);
+      return reply.redirect(result.authorization_url, 302);
+    } catch (err: any) {
+      const isValidation = err.message?.includes('INVALID_REDIRECT_URI');
+      return reply.status(isValidation ? 400 : 500).send({
+        error: {
+          code: isValidation ? 'VALIDATION_ERROR' : 'INTERNAL_ERROR',
+          message: err.message,
+          retryable: false,
+        },
+        request_id: crypto.randomUUID(),
+      });
+    }
+  });
+
+  // 2. Browser callback endpoint handling redirect from Zhihu
+  // Redirects code & state back to SPA AuthCallback to perform secure POST exchange
+  app.get<{ Querystring: { code?: string; state?: string } }>('/auth/zhihu/callback', async (request, reply) => {
+    const { code, state } = request.query;
+    if (!code || !state) {
+      return reply.status(400).send({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Missing code or state in callback',
+          retryable: false,
+        },
+        request_id: crypto.randomUUID(),
+      });
+    }
+
+    const frontendOrigin = process.env['APP_ORIGIN'] || 'http://localhost:5173';
+    const redirectUrl = `${frontendOrigin}/auth/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`;
+    return reply.redirect(redirectUrl, 302);
+  });
+
+  // 3. SPA API to start Zhihu OAuth
   app.post<{ Body: unknown }>('/auth/zhihu/start', async (request, reply) => {
     const parsed = StartOAuthSchema.safeParse(request.body ?? {});
     if (!parsed.success) {
@@ -60,7 +99,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // 2. Exchange Zhihu OAuth code for session
+  // 4. SPA API to exchange Zhihu OAuth code for session
   app.post<{ Body: unknown }>('/auth/zhihu/exchange', async (request, reply) => {
     const parsed = ExchangeOAuthSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -92,10 +131,18 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // 3. Create extension pairing ticket (requires web login)
+  // 5. Create extension pairing ticket (requires web login)
   app.post<{ Body: unknown }>('/auth/extension-ticket', async (request, reply) => {
-    const user = (request as any).user;
-    if (!user || !user.uid) {
+    let uid = (request as any).user?.uid;
+    if (!uid) {
+      const authHeader = request.headers['authorization'];
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const session = await resolveSession(authHeader.slice(7).trim());
+        uid = session?.uid;
+      }
+    }
+
+    if (!uid) {
       return reply.status(401).send({
         error: {
           code: 'UNAUTHORIZED',
@@ -118,7 +165,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const ticket = await createPairingTicket(user.uid, parsed.data.device_id, parsed.data.challenge);
+    const ticket = await createPairingTicket(uid, parsed.data.device_id, parsed.data.challenge);
 
     return {
       data: { ticket },
@@ -126,7 +173,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     };
   });
 
-  // 4. Exchange pairing ticket for device session
+  // 6. Exchange pairing ticket for device session
   app.post<{ Body: unknown }>('/auth/extension-exchange', async (request, reply) => {
     const parsed = ExchangeTicketSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -163,7 +210,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   });
 
-  // 5. Logout
+  // 7. Logout
   app.post('/auth/logout', async (request) => {
     const authHeader = request.headers['authorization'];
     if (authHeader && authHeader.startsWith('Bearer ')) {

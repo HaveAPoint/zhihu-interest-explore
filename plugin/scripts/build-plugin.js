@@ -17,6 +17,14 @@ const commonOptions = {
   sourcemap: true,
   minify: !isWatch,
   logLevel: 'info',
+  define: {
+    '__API_ORIGIN__': JSON.stringify(process.env.API_ORIGIN || 'http://localhost:9000'),
+    '__APP_ORIGIN__': JSON.stringify(process.env.APP_ORIGIN || 'http://localhost:5173'),
+    'process.env.API_ORIGIN': JSON.stringify(process.env.API_ORIGIN || 'http://localhost:9000'),
+    'process.env.APP_ORIGIN': JSON.stringify(process.env.APP_ORIGIN || 'http://localhost:5173'),
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
+    'process.env': '{}',
+  },
 };
 
 async function build() {
@@ -25,12 +33,19 @@ async function build() {
     fs.mkdirSync(distDir, { recursive: true });
   }
 
-  // Copy manifest.json
+  // Copy and process manifest.json
   const manifestSrc = path.join(pluginDir, 'manifest.json');
   const manifestDest = path.join(distDir, 'manifest.json');
   if (fs.existsSync(manifestSrc)) {
-    fs.copyFileSync(manifestSrc, manifestDest);
-    console.log('Copied manifest.json to dist/');
+    const rawManifest = JSON.parse(fs.readFileSync(manifestSrc, 'utf-8'));
+    // In production builds, remove localhost from externally_connectable
+    if (process.env.NODE_ENV === 'production' && rawManifest.externally_connectable?.matches) {
+      rawManifest.externally_connectable.matches = rawManifest.externally_connectable.matches.filter(
+        (m) => !m.includes('localhost')
+      );
+    }
+    fs.writeFileSync(manifestDest, JSON.stringify(rawManifest, null, 2), 'utf-8');
+    console.log('Processed and copied manifest.json to dist/');
   }
 
   // Content script

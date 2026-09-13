@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { dataSourceResolver } from '../data/source-resolver.js';
 import { extensionBridge } from '../data/extension-bridge.js';
 
-const API_ORIGIN = process.env['API_ORIGIN'] || 'http://localhost:9000';
+const API_ORIGIN =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.['VITE_API_ORIGIN']) ||
+  (typeof process !== 'undefined' && process.env ? process.env['API_ORIGIN'] : '') ||
+  'http://localhost:9000';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();

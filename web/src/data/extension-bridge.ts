@@ -8,8 +8,15 @@ import {
   type BridgeResponse,
 } from '@zhihu-explore/contracts';
 
-// In development / local testing, Chrome assigns an extension ID, or we connect to whatever is installed
-const DEFAULT_EXTENSION_ID = process.env['EXTENSION_ID'] || '';
+const API_ORIGIN =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.['VITE_API_ORIGIN']) ||
+  (typeof process !== 'undefined' && process.env ? process.env['API_ORIGIN'] : '') ||
+  'http://localhost:9000';
+
+const DEFAULT_EXTENSION_ID =
+  (typeof import.meta !== 'undefined' && (import.meta as any).env?.['VITE_EXTENSION_ID']) ||
+  (typeof process !== 'undefined' && process.env ? process.env['EXTENSION_ID'] : '') ||
+  '';
 
 export interface ExtensionStatus {
   available: boolean;
@@ -40,39 +47,35 @@ export class ExtensionBridge {
       payload,
     };
 
-    return new Promise((resolve, reject) => {
+    return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {
-        reject(new Error(`Extension bridge timeout for action "${action}"`));
+        reject(new Error(`Extension bridge timeout for action: ${action}`));
       }, timeoutMs);
 
-      try {
-        chrome.runtime.sendMessage(
-          this.extensionId,
-          request,
-          (response: BridgeResponse) => {
-            clearTimeout(timer);
-            const err = chrome.runtime.lastError;
-            if (err) {
-              reject(new Error(err.message || 'Failed to communicate with extension'));
-              return;
-            }
-
-            if (!response) {
-              reject(new Error('Empty response from extension'));
-              return;
-            }
-
-            if (!response.success) {
-              reject(new Error(response.error || 'Extension action failed'));
-              return;
-            }
-
-            resolve(response.data as T);
-          }
-        );
-      } catch (err) {
+      const callback = (response: BridgeResponse) => {
         clearTimeout(timer);
-        reject(err);
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message || 'Extension communication error'));
+          return;
+        }
+
+        if (!response) {
+          reject(new Error('Empty response from extension bridge'));
+          return;
+        }
+
+        if (!response.success) {
+          reject(new Error(response.error || `Bridge action ${action} failed`));
+          return;
+        }
+
+        resolve(response.data as T);
+      };
+
+      if (this.extensionId) {
+        chrome.runtime.sendMessage(this.extensionId, request, callback);
+      } else {
+        chrome.runtime.sendMessage(request, callback);
       }
     });
   }
@@ -104,17 +107,43 @@ export class ExtensionBridge {
     return this.send('GET_TREE', { tree_id: treeId });
   }
 
-  async getPairingChallenge(): Promise<string> {
-    const res = await this.send<{ challenge: string }>('GET_PAIRING_CHALLENGE');
-    return res.challenge;
+  async getPairingChallenge(): Promise<{ challenge: string; device_id: string }> {
+    return this.send<{ challenge: string; device_id: string }>('GET_PAIRING_CHALLENGE');
   }
 
-  async pairSession(uid: string, token: string) {
-    return this.send('PAIR_SESSION', { uid, token });
+  async pairWithTicket(deviceId: string, challenge: string, ticket: string) {
+    return this.send('PAIR_SESSION', { device_id: deviceId, challenge, ticket });
   }
 
-  async pairUser(token: string, uid: string) {
-    return this.pairSession(uid, token);
+  async pairUser(token: string, _uid: string) {
+    // 1. Get challenge & device ID from extension
+    const { challenge, device_id } = await this.getPairingChallenge();
+
+    // 2. Exchange web session for short-lived pairing ticket with server
+    const res = await fetch(`${API_ORIGIN}/auth/extension-ticket`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        device_id,
+        challenge,
+      }),
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to request pairing ticket from server: ${res.status}`);
+    }
+
+    const data = await res.json();
+    const ticket = data.data?.ticket;
+    if (!ticket) {
+      throw new Error('Server returned empty pairing ticket');
+    }
+
+    // 3. Deliver ticket to extension background worker to acquire dedicated device token
+    return this.pairWithTicket(device_id, challenge, ticket);
   }
 
   async logout() {

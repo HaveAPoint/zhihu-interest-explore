@@ -42,8 +42,8 @@ const DB_VERSION = 1;
 export class PluginStorageRepository {
   private dbPromise: Promise<IDBPDatabase>;
 
-  constructor() {
-    this.dbPromise = openDB(DB_NAME, DB_VERSION, {
+  constructor(dbName: string = DB_NAME) {
+    this.dbPromise = openDB(dbName, DB_VERSION, {
       upgrade(db) {
         // 1. Articles
         if (!db.objectStoreNames.contains('articles')) {
@@ -177,6 +177,21 @@ export class PluginStorageRepository {
     await db.delete('drafts', [partition, draftId]);
   }
 
+  async listDrafts(partition: string, articleId?: string): Promise<DraftItem[]> {
+    const db = await this.dbPromise;
+    const all = await db.getAllFromIndex('drafts', 'by_partition', partition);
+    if (articleId) {
+      return all.filter((d) => d.article_id === articleId);
+    }
+    return all;
+  }
+
+  async listTreesByArticle(partition: string, articleId: string): Promise<LocalTree[]> {
+    const db = await this.dbPromise;
+    const rows = await db.getAllFromIndex('trees', 'by_article_id', [partition, articleId]);
+    return rows.map(({ partition: _p, ...tree }) => tree as LocalTree);
+  }
+
   // --- Articles ---
 
   async saveArticle(partition: string, article: Article): Promise<void> {
@@ -225,7 +240,7 @@ export class PluginStorageRepository {
     return rows.map(({ partition: _p, ...node }) => node as PersonalNode);
   }
 
-  // --- Account Meta ---
+  // --- Account Meta & Active Session ---
 
   async getAccountMeta(partition: string): Promise<AccountMeta | null> {
     const db = await this.dbPromise;
@@ -235,5 +250,38 @@ export class PluginStorageRepository {
   async setAccountMeta(meta: AccountMeta): Promise<void> {
     const db = await this.dbPromise;
     await db.put('account_meta', meta);
+  }
+
+  async saveDeviceSession(session: { uid: string; deviceToken: string; deviceId: string }): Promise<void> {
+    const db = await this.dbPromise;
+    await db.put('account_meta', {
+      partition: 'active_session',
+      uid: session.uid,
+      deviceId: session.deviceId,
+      lastSyncAt: new Date().toISOString(),
+      migrationDone: true,
+      deviceToken: session.deviceToken,
+    });
+  }
+
+  async getDeviceSession(): Promise<{ uid: string; deviceToken: string; deviceId: string } | null> {
+    const db = await this.dbPromise;
+    const row: any = await db.get('account_meta', 'active_session');
+    if (!row || !row.deviceToken || !row.uid) return null;
+    return {
+      uid: row.uid,
+      deviceToken: row.deviceToken,
+      deviceId: row.deviceId,
+    };
+  }
+
+  async clearDeviceSession(): Promise<void> {
+    const db = await this.dbPromise;
+    await db.delete('account_meta', 'active_session');
+  }
+
+  async close(): Promise<void> {
+    const db = await this.dbPromise;
+    db.close();
   }
 }

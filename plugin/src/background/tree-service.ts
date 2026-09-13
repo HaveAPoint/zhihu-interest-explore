@@ -18,6 +18,7 @@ import type {
   LocalTree,
   LocalNode,
   Article,
+  PersonalNode,
   DisciplineSlug,
   LocalSyncMeta,
   SkeletonNode,
@@ -442,4 +443,47 @@ export class LocalTreeService {
       await this.repo.saveTreeAtomic(this.partition, resetTree, { ...meta, dirty: true }, outboxItem);
     }
   }
+
+  // --- Drafts & Personal Nodes ---
+
+  async listArticleTrees(articleId: string): Promise<LocalTree[]> {
+    return this.repo.listTreesByArticle(this.partition, articleId);
+  }
+
+  async saveDraft(payload: any): Promise<DraftItem> {
+    const draft: DraftItem = {
+      id: crypto.randomUUID(),
+      partition: this.partition,
+      article_id: payload.article_id,
+      parent_id: payload.parent_id ?? null,
+      highlight_text: payload.highlight_text,
+      question_text: payload.question_text,
+      created_at: new Date().toISOString(),
+    };
+    await this.repo.saveDraft(draft);
+    return draft;
+  }
+
+  async listDrafts(articleId: string): Promise<DraftItem[]> {
+    return this.repo.listDrafts(this.partition, articleId);
+  }
+
+  async deleteDraft(draftId: string): Promise<void> {
+    await this.repo.deleteDraft(this.partition, draftId);
+  }
+
+  async createPersonalNode(payload: any): Promise<PersonalNode> {
+    const node: PersonalNode = {
+      id: crypto.randomUUID(),
+      uid: this.partition,
+      discipline_slug: payload.discipline_slug,
+      parent_id: payload.parent_id,
+      title: payload.title,
+      definition: payload.definition,
+      created_at: new Date().toISOString(),
+    };
+    await this.repo.savePersonalNode(this.partition, node);
+    return node;
+  }
 }
+
