@@ -34,6 +34,7 @@ export interface AccountMeta {
   deviceId: string | null;
   lastSyncAt: string | null;
   migrationDone: boolean;
+  lastCreateSeq?: number;
 }
 
 const DB_NAME = 'zhihu_explore_db';
@@ -216,6 +217,11 @@ export class PluginStorageRepository {
   }
 
   // --- Outbox ---
+
+  async addOutboxItem(item: OutboxItem): Promise<void> {
+    const db = await this.dbPromise;
+    await db.put('outbox', item);
+  }
 
   async listOutbox(partition: string): Promise<OutboxItem[]> {
     const db = await this.dbPromise;

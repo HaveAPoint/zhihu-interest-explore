@@ -45,7 +45,9 @@ export class SyncRunner {
     let deletedCount = 0;
 
     try {
-      // 1. Process Outbox: upload personal nodes first (dependencies before trees)
+      // 1. Process Outbox:
+      // a) personal nodes first (dependencies before trees)
+      // b) delete tree requests (cleanup remote trees deleted locally)
       const outboxItems = await this.repo.listOutbox(partition);
       for (const item of outboxItems) {
         if (item.type === 'CREATE_PERSONAL_NODE') {
@@ -55,14 +57,24 @@ export class SyncRunner {
           } catch (err) {
             console.error('Failed to sync personal node from outbox', err);
           }
+        } else if (item.type === 'DELETE_TREE') {
+          try {
+            await this.network.deleteRemoteTree(token, item.payload.treeId, item.payload.rootId);
+            await this.repo.removeOutboxItem(partition, item.id);
+            deletedCount++;
+          } catch (err) {
+            console.error('Failed to sync delete tree from outbox', err);
+          }
         }
       }
 
       // 2. Fetch remote manifest
       let manifestStatus: ManifestFetchStatus;
+      let manifestLastSeq: number | null = null;
       try {
         const manifest = await this.network.fetchManifest(token);
         manifestStatus = { status: 'complete', entries: manifest.trees };
+        manifestLastSeq = manifest.last_create_seq ?? null;
       } catch (err: any) {
         // S09: Manifest fetch failure must not delete local trees!
         manifestStatus = { status: 'failed', error: err.message };
@@ -85,9 +97,19 @@ export class SyncRunner {
         deviceId: null,
         lastSyncAt: null,
         migrationDone: false,
+        lastCreateSeq: 0,
       };
 
-      let currentSeq = 0;
+      // Base sequence is the maximum of locally persisted lastCreateSeq and server manifest last_create_seq
+      let currentSeq = Math.max(accountMeta.lastCreateSeq ?? 0, manifestLastSeq ?? 0);
+
+      // Also ensure currentSeq is at least as high as any inflight sequence currently on local trees
+      for (const tree of localTrees) {
+        const meta = await this.repo.getSyncMeta(partition, tree.id);
+        if (meta?.createSeq && meta.createSeq > currentSeq) {
+          currentSeq = meta.createSeq;
+        }
+      }
 
       for (const tree of localTrees) {
         const localMeta = (await this.repo.getSyncMeta(partition, tree.id)) ?? {
@@ -113,6 +135,10 @@ export class SyncRunner {
         switch (action.type) {
           case 'UPLOAD_CREATE': {
             currentSeq++;
+            // Persist sequence progression immediately to accountMeta
+            accountMeta.lastCreateSeq = currentSeq;
+            await this.repo.setAccountMeta(accountMeta);
+
             const uploadedVersion = tree.version;
 
             // Inflight state update
@@ -124,26 +150,85 @@ export class SyncRunner {
             await this.repo.saveTreeAtomic(partition, tree, inflightMeta);
 
             try {
-              await this.network.uploadCreateTree(token, tree, currentSeq);
-              uploadedCount++;
+              const ack = await this.network.uploadCreateTree(token, tree, currentSeq);
 
-              // S07: Check if local tree changed while upload was in progress
-              const currentTree = await this.repo.getTree(partition, tree.id);
-              const stillSameVersion = currentTree?.version === uploadedVersion;
+              // Strict verification of ACK: must match status and tree_id!
+              if (
+                (ack.status === 'created' || ack.status === 'already_created') &&
+                ack.tree_id === tree.id
+              ) {
+                uploadedCount++;
 
-              const confirmedMeta: LocalSyncMeta = {
-                ...localMeta,
-                cloudState: 'confirmed',
-                ackVersion: uploadedVersion,
-                dirty: !stillSameVersion,
-                createSeq: currentSeq,
-              };
+                // S07: Check if local tree changed while upload was in progress
+                const currentTree = await this.repo.getTree(partition, tree.id);
+                const stillSameVersion = currentTree?.version === uploadedVersion;
 
-              if (currentTree) {
-                await this.repo.saveTreeAtomic(partition, currentTree, confirmedMeta);
+                const confirmedMeta: LocalSyncMeta = {
+                  ...localMeta,
+                  cloudState: 'confirmed',
+                  ackVersion: ack.version ?? uploadedVersion,
+                  dirty: !stillSameVersion,
+                  createSeq: currentSeq,
+                };
+
+                if (currentTree) {
+                  await this.repo.saveTreeAtomic(partition, currentTree, confirmedMeta);
+                }
+              } else if (ack.status === 'deleted') {
+                // Cloud indicates this sequence was created and deleted; remove local tree
+                await this.repo.deleteTreeAtomic(partition, tree.id, tree.root_node_id);
+                deletedCount++;
+              } else {
+                console.warn(
+                  `[SyncRunner] Tree create ACK mismatch or unconfirmed for ${tree.id}:`,
+                  ack,
+                );
+                // Do NOT mark confirmed! Keep in create_inflight to prevent S02 deletion in next round.
               }
             } catch (err) {
               console.error(`Failed to upload create tree ${tree.id}`, err);
+            }
+            break;
+          }
+
+          case 'RETRY_CREATE': {
+            const retrySeq = action.createSeq;
+            const uploadedVersion = tree.version;
+
+            try {
+              const ack = await this.network.uploadCreateTree(token, tree, retrySeq);
+
+              if (
+                (ack.status === 'created' || ack.status === 'already_created') &&
+                ack.tree_id === tree.id
+              ) {
+                uploadedCount++;
+
+                const currentTree = await this.repo.getTree(partition, tree.id);
+                const stillSameVersion = currentTree?.version === uploadedVersion;
+
+                const confirmedMeta: LocalSyncMeta = {
+                  ...localMeta,
+                  cloudState: 'confirmed',
+                  ackVersion: ack.version ?? uploadedVersion,
+                  dirty: !stillSameVersion,
+                  createSeq: retrySeq,
+                };
+
+                if (currentTree) {
+                  await this.repo.saveTreeAtomic(partition, currentTree, confirmedMeta);
+                }
+              } else if (ack.status === 'deleted') {
+                await this.repo.deleteTreeAtomic(partition, tree.id, tree.root_node_id);
+                deletedCount++;
+              } else {
+                console.warn(
+                  `[SyncRunner] Retry create ACK mismatch or unconfirmed for ${tree.id}:`,
+                  ack,
+                );
+              }
+            } catch (err) {
+              console.error(`Failed to retry create tree ${tree.id}`, err);
             }
             break;
           }
@@ -227,6 +312,34 @@ export class SyncRunner {
 
           default:
             break;
+        }
+      }
+
+      // 4. Download remote-only trees (e.g. created on Web dashboard)
+      const localRootIds = new Set(localTrees.map((t) => t.root_node_id));
+      const deletedRootIds = new Set(
+        outboxItems.filter((i) => i.type === 'DELETE_TREE').map((i) => i.payload.rootId),
+      );
+
+      for (const entry of manifestStatus.entries) {
+        if (!localRootIds.has(entry.root_id) && !deletedRootIds.has(entry.root_id)) {
+          try {
+            const remoteTree = await this.network.fetchRemoteTree(token, entry.tree_id);
+            if (remoteTree) {
+              const meta: LocalSyncMeta = {
+                partition: partition as any,
+                cloudState: 'confirmed',
+                ackVersion: remoteTree.version,
+                dirty: false,
+                pendingDelete: false,
+                createSeq: null,
+              };
+              await this.repo.saveTreeAtomic(partition, remoteTree, meta);
+              downloadedCount++;
+            }
+          } catch (err) {
+            console.error(`Failed to download remote-only tree ${entry.tree_id}`, err);
+          }
         }
       }
 

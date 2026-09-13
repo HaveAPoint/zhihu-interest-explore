@@ -186,15 +186,20 @@ describe('T25 & T26: Account Isolation, Session Persistence & Guest Claiming', (
         discipline_slug: 'agent-app-dev',
         global_node_id: 'agent-app-dev/tool-calling',
         root_node_id: '77777777-7777-7777-7777-777777777777',
+        match_candidates: [],
+        anchor_paragraph: 'Paragraph text',
+        anchor_highlight: 'HL',
         nodes: [
           {
             id: '77777777-7777-7777-7777-777777777777',
+            tree_id: '99999999-9999-9999-9999-999999999999',
             parent_id: null,
             title: 'Guest Tree Root',
             highlight_text: 'HL',
             question_text: 'Q',
-            answer_text: 'A',
-            quote_text: 'QT',
+            answer_original: 'QT',
+            answer_extra: 'A',
+            sources: [],
             created_at: new Date().toISOString(),
           },
         ],
@@ -267,7 +272,7 @@ describe('T25 & T26: Account Isolation, Session Persistence & Guest Claiming', (
       // 3. Verify guest data claimed into user partition
       const userTrees = await repo.listTrees(`uid:${targetUid}`);
       expect(userTrees).toHaveLength(1);
-      expect(userTrees[0]!.title ?? userTrees[0]!.nodes[0]?.title).toBe('Guest Tree Root');
+      expect(userTrees[0]!.nodes[0]?.title).toBe('Guest Tree Root');
     });
   });
 
@@ -285,15 +290,20 @@ describe('T25 & T26: Account Isolation, Session Persistence & Guest Claiming', (
         discipline_slug: 'agent-app-dev',
         global_node_id: 'agent-app-dev/tool-calling',
         root_node_id: '33333333-3333-3333-3333-333333333331',
+        match_candidates: [],
+        anchor_paragraph: 'Paragraph 1',
+        anchor_highlight: 'Highlight 1',
         nodes: [
           {
             id: '33333333-3333-3333-3333-333333333331',
+            tree_id: '11111111-1111-1111-1111-111111111111',
             parent_id: null,
             title: 'Guest Concept 1',
             highlight_text: 'Highlight 1',
             question_text: 'Question 1',
-            answer_text: 'Answer 1',
-            quote_text: 'Quote 1',
+            answer_original: 'Quote 1',
+            answer_extra: 'Answer 1',
+            sources: [],
             created_at: new Date().toISOString(),
           },
         ],
@@ -309,15 +319,20 @@ describe('T25 & T26: Account Isolation, Session Persistence & Guest Claiming', (
         discipline_slug: 'agent-app-dev',
         global_node_id: 'agent-app-dev/core-patterns/react',
         root_node_id: '33333333-3333-3333-3333-333333333332',
+        match_candidates: [],
+        anchor_paragraph: 'Paragraph 2',
+        anchor_highlight: 'Highlight 2',
         nodes: [
           {
             id: '33333333-3333-3333-3333-333333333332',
+            tree_id: '11111111-1111-1111-1111-111111111112',
             parent_id: null,
             title: 'Guest Concept 2',
             highlight_text: 'Highlight 2',
             question_text: 'Question 2',
-            answer_text: 'Answer 2',
-            quote_text: 'Quote 2',
+            answer_original: 'Quote 2',
+            answer_extra: 'Answer 2',
+            sources: [],
             created_at: new Date().toISOString(),
           },
         ],

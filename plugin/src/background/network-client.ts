@@ -12,6 +12,13 @@ export interface NetworkClientOptions {
   apiOrigin: string;
 }
 
+export interface SyncCreateResult {
+  status: 'created' | 'already_created' | 'deleted';
+  tree_id?: string;
+  version?: number;
+  device_create_seq?: number;
+}
+
 export class SyncNetworkClient {
   private apiOrigin: string;
 
@@ -40,7 +47,11 @@ export class SyncNetworkClient {
     return json.data;
   }
 
-  async uploadCreateTree(token: string, snapshot: LocalTree, deviceCreateSeq: number): Promise<any> {
+  async uploadCreateTree(
+    token: string,
+    snapshot: LocalTree,
+    deviceCreateSeq: number,
+  ): Promise<SyncCreateResult> {
     const res = await fetch(`${this.apiOrigin}/sync/trees`, {
       method: 'POST',
       headers: {
