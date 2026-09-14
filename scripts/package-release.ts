@@ -34,8 +34,13 @@ async function main() {
     process.exit(1);
   }
 
-  // 1. Build Plugin (RELEASE mode enforces no localhost fallback)
-  console.log('1. Building plugin bundles via esbuild (RELEASE mode)...');
+  // 1. Clean and build Plugin (RELEASE mode enforces no localhost fallback)
+  console.log('1. Cleaning and building plugin bundles via esbuild (RELEASE mode)...');
+  if (fs.existsSync(PLUGIN_DIST)) {
+    fs.rmSync(PLUGIN_DIST, { recursive: true, force: true });
+  }
+  fs.mkdirSync(PLUGIN_DIST, { recursive: true });
+
   execSync('node plugin/scripts/build-plugin.js', {
     cwd: ROOT_DIR,
     stdio: 'inherit',
@@ -71,14 +76,14 @@ async function main() {
   // 2. Prepare Web Public Downloads Directory
   fs.mkdirSync(WEB_PUBLIC_DOWNLOADS, { recursive: true });
 
-  // 3. Zip Plugin (ensure manifest.json is at root of archive)
-  console.log(`2. Packaging plugin archive into ${RELEASE_ZIP_PATH}...`);
+  // 3. Zip Plugin (ensure manifest.json is at root of archive, packaging only runtime assets)
+  console.log(`2. Packaging clean plugin archive into ${RELEASE_ZIP_PATH}...`);
   if (fs.existsSync(RELEASE_ZIP_PATH)) {
     fs.unlinkSync(RELEASE_ZIP_PATH);
   }
 
-  // Zip files from within plugin/dist directly
-  execSync(`cd "${PLUGIN_DIST}" && zip -r "${RELEASE_ZIP_PATH}" . -x "*.DS_Store"`, {
+  // Only package required runtime assets: manifest.json, content.js, background.js (and assets if present)
+  execSync(`cd "${PLUGIN_DIST}" && zip -r "${RELEASE_ZIP_PATH}" manifest.json content.js background.js $([ -d assets ] && echo assets) -x "*.DS_Store"`, {
     stdio: 'inherit',
   });
 

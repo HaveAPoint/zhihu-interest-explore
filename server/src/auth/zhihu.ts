@@ -29,6 +29,7 @@ export interface OAuthExchangeResult {
 const ALLOWED_REDIRECT_URIS = new Set([
   process.env['ZHIHU_REDIRECT_URI'] || 'http://localhost:5173/auth/callback',
   'http://localhost:5173/auth/callback',
+  'https://hackerson-d0g0z55d2fc446485-1487155803.tcloudbaseapp.com/auth/callback',
   'https://zhihu-explore.tcloudbaseapp.com/auth/callback',
 ]);
 

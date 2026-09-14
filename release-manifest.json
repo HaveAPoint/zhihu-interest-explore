@@ -1,12 +1,12 @@
 {
   "version": "0.0.1",
-  "build_time": "2026-09-14T10:04:41.507Z",
+  "build_time": "2026-09-14T10:12:06.514Z",
   "packages": {
     "extension": {
       "filename": "zhihu-explore-extension.zip",
       "path": "web/public/downloads/zhihu-explore-extension.zip",
-      "sha256": "d090fb788c871978beb4cc17805e4b80e07001adaa1a5baca14c19e2efe43baf",
-      "size_bytes": 366532
+      "sha256": "72c398c7cab18d40ccffe7cd0b7eadcc090ca09ecceaa5520dbe06abc0cef032",
+      "size_bytes": 60600
     }
   }
 }
