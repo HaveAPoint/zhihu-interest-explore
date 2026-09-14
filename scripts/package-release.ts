@@ -21,9 +21,18 @@ const MANIFEST_PATH = path.join(ROOT_DIR, 'release-manifest.json');
 async function main() {
   console.log('📦 Starting release packaging process...');
 
-  // Production origins — override via environment or use defaults
-  const apiOrigin = process.env.API_ORIGIN || 'https://zhihu-explore-api.app';
-  const appOrigin = process.env.APP_ORIGIN || 'https://zhihu-interest-explore.web.app';
+  // Production origins from web/.env.production
+  const apiOrigin = process.env.API_ORIGIN || 'https://hackerson-d0g0z55d2fc446485.service.tcloudbase.com/api';
+  const appOrigin = process.env.APP_ORIGIN || 'https://hackerson-d0g0z55d2fc446485-1487155803.tcloudbaseapp.com';
+
+  if (apiOrigin.includes('zhihu-explore-api.app') || apiOrigin.includes('localhost')) {
+    console.error(`❌ FATAL: Invalid API_ORIGIN in release: ${apiOrigin}`);
+    process.exit(1);
+  }
+  if (appOrigin.includes('zhihu-interest-explore.web.app') || appOrigin.includes('localhost')) {
+    console.error(`❌ FATAL: Invalid APP_ORIGIN in release: ${appOrigin}`);
+    process.exit(1);
+  }
 
   // 1. Build Plugin (RELEASE mode enforces no localhost fallback)
   console.log('1. Building plugin bundles via esbuild (RELEASE mode)...');

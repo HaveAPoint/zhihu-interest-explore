@@ -266,20 +266,29 @@ async function init() {
     overlay.showForNewSelection(currentArticle!, selection);
   });
 
-  // Load trees after callbacks are registered so deep-link opens correctly
-  await refreshTrees();
-
   // Test hook for Playwright / browser testing (only included in test builds)
   if (typeof __ENABLE_TEST_HOOKS__ !== 'undefined' && __ENABLE_TEST_HOOKS__) {
     window.addEventListener('message', (event) => {
-      if (event.data?.type === '__ZHIHU_EXPLORE_TEST_SHOW_TREE__' && event.data?.tree) {
-        anchorManager.setTrees([event.data.tree]);
-        overlay.showForExistingTree(currentArticle!, event.data.tree);
-        overlay.refreshArrows();
+      if (event.data?.type === '__ZHIHU_EXPLORE_TEST_SHOW_TREE__') {
+        if (event.data?.tree) {
+          anchorManager.setTrees([event.data.tree]);
+          overlay.showForExistingTree(currentArticle!, event.data.tree);
+          overlay.refreshArrows();
+        } else {
+          anchorManager.setTrees([]);
+          overlay.close();
+        }
+      } else if (event.data?.type === '__ZHIHU_EXPLORE_TEST_CLEAR_TREES__') {
+        anchorManager.setTrees([]);
+        overlay.close();
       }
     });
   }
 
+  // Load trees after callbacks are registered so deep-link opens correctly
+  await refreshTrees();
+
+  document.body.setAttribute('data-zhihu-explore-ready', 'true');
   console.log('[zhihu-explore] Content script ready on article:', currentArticle?.title);
 }
 

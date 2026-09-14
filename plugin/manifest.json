@@ -10,7 +10,8 @@
   "host_permissions": [
     "https://zhuanlan.zhihu.com/*",
     "http://localhost:9000/*",
-    "https://*.tcloudbase.com/*"
+    "https://*.tcloudbase.com/*",
+    "https://*.tcloudbaseapp.com/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -30,7 +31,7 @@
   "externally_connectable": {
     "matches": [
       "http://localhost:5173/*",
-      "https://zhihu-explore.tcloudbaseapp.com/*"
+      "https://hackerson-d0g0z55d2fc446485-1487155803.tcloudbaseapp.com/*"
     ]
   },
   "action": {

@@ -17,6 +17,8 @@ test.describe('Milestones M2~M4: Followup Selection, Arrow, Long-press & Host La
       window.postMessage({ type: '__ZHIHU_EXPLORE_TEST_SHOW_TREE__', tree }, '*');
     }, treeAbcdefFixture);
 
+    await page.locator('.zhihu-explore-container[data-drawer-settled="true"]').waitFor({ timeout: 5000 });
+
     // Wait for tree nodes to appear
     await expect(page.locator('.zhihu-explore-tree-node').first()).toBeVisible({ timeout: 5000 });
     await expect(page.locator('.zhihu-explore-answer-extra').first()).toBeVisible({ timeout: 5000 });

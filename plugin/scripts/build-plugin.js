@@ -53,10 +53,22 @@ async function build() {
   const manifestDest = path.join(distDir, 'manifest.json');
   if (fs.existsSync(manifestSrc)) {
     const rawManifest = JSON.parse(fs.readFileSync(manifestSrc, 'utf-8'));
-    // In production builds, remove localhost from externally_connectable
-    if (process.env.NODE_ENV === 'production' && rawManifest.externally_connectable?.matches) {
+    // In production/release builds, remove localhost from externally_connectable & host_permissions
+    if ((isRelease || process.env.NODE_ENV === 'production') && rawManifest.externally_connectable?.matches) {
       rawManifest.externally_connectable.matches = rawManifest.externally_connectable.matches.filter(
         (m) => !m.includes('localhost')
+      );
+      try {
+        const appUrl = new URL(appOrigin);
+        const appPattern = `${appUrl.origin}/*`;
+        if (!rawManifest.externally_connectable.matches.includes(appPattern)) {
+          rawManifest.externally_connectable.matches.push(appPattern);
+        }
+      } catch {}
+    }
+    if ((isRelease || process.env.NODE_ENV === 'production') && Array.isArray(rawManifest.host_permissions)) {
+      rawManifest.host_permissions = rawManifest.host_permissions.filter(
+        (p) => !p.includes('localhost')
       );
     }
     fs.writeFileSync(manifestDest, JSON.stringify(rawManifest, null, 2), 'utf-8');

@@ -175,61 +175,85 @@ test.describe('P0 & P1 Regression Spec Suite (§5 LT01~LT13)', () => {
     await page.close();
   });
 
-  // 4. Repeated refresh zero pollution test
-  test('Regression 4: Repeated refreshTrees does not pollute article text with badge numbers', async ({ openArticlePage }) => {
-    const page = await openArticlePage();
+  // 4. Repeated refresh zero pollution & cross-tag restoration test
+  test('Regression 4: Repeated refreshTrees does not pollute article text and preserves nested tags like <strong> upon real clearAnchors', async ({ openArticlePage }) => {
+    // Custom article with nested <strong> tag inside #p1
+    const customHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head><title>跨标签高亮与零污染测试</title></head>
+        <body>
+          <div class="Post-Main">
+            <h1 class="Post-Title">跨标签高亮测试</h1>
+            <div class="Post-RichTextContainer">
+              <div class="RichText ztext Post-RichText">
+                <p id="p1">通过<strong>工具调用</strong>机制，智能体突破了参数限制。</p>
+              </div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+    const page = await openArticlePage(customHtml);
     const container = page.locator('.zhihu-explore-container[data-overlay-ready="true"]');
     await container.waitFor({ state: 'attached', timeout: 5000 });
 
-    // Capture baseline text content of #p1
+    // Capture baseline innerHTML and textContent of #p1
+    const originalHtml = await page.locator('#p1').evaluate((el) => el.innerHTML);
     const originalText = await page.locator('#p1').evaluate((el) => el.textContent);
+    expect(originalHtml).toContain('<strong>工具调用</strong>');
 
-    // Show tree to create anchors and badges
+    // Construct tree spanning across plain text and <strong> element
+    const crossTagTree = JSON.parse(JSON.stringify(treeAbcdefFixture));
+    const rootNode = crossTagTree.nodes[0];
+    rootNode.highlight_text = '通过工具调用机制';
+    rootNode.highlight_anchor = {
+      exact: '通过工具调用机制',
+      paragraph_index: 0,
+      start_offset: 0,
+      end_offset: 8,
+    };
+    crossTagTree.anchor_paragraph = '通过工具调用机制，智能体突破了参数限制。';
+    crossTagTree.anchor_highlight = '通过工具调用机制';
+
+    // Show tree via test hook -> invokes real anchorManager.setTrees([tree])
     await page.evaluate((tree) => {
       window.postMessage({ type: '__ZHIHU_EXPLORE_TEST_SHOW_TREE__', tree }, '*');
-    }, treeAbcdefFixture);
+    }, crossTagTree);
 
     await page.locator('.zhihu-explore-container[data-drawer-settled="true"]').waitFor({ timeout: 5000 });
 
-    // Verify badge element is separate from mark
-    const mark = page.locator('#p1 .zhihu-explore-anchor-mark');
-    await expect(mark.first()).toBeVisible({ timeout: 5000 });
+    // Verify marks are created across the text nodes (outside and inside <strong>)
+    const marks = page.locator('#p1 .zhihu-explore-anchor-mark');
+    await expect(marks.first()).toBeVisible({ timeout: 5000 });
+    const markCount = await marks.count();
+    expect(markCount).toBeGreaterThanOrEqual(2); // Must wrap text before strong, inside strong, and after strong
 
+    // Verify badge element is separate from mark
     const badge = page.locator('#p1 .zhihu-explore-anchor-badge');
     await expect(badge.first()).toBeVisible();
-
-    // Mark must only contain highlighted text, NOT badge text
-    const markContent = await mark.first().evaluate((el) => el.textContent);
-    expect(markContent).not.toContain('1'); // badge count must not be inside mark
 
     // Trigger multiple re-render cycles via window postMessage
     for (let i = 0; i < 3; i++) {
       await page.evaluate((tree) => {
         window.postMessage({ type: '__ZHIHU_EXPLORE_TEST_SHOW_TREE__', tree }, '*');
-      }, treeAbcdefFixture);
+      }, crossTagTree);
       await page.waitForTimeout(100);
     }
 
-    // Now close overlay and clear anchor marks
+    // Now trigger real cleanup via the extension's actual implementation (anchorManager.setTrees([]))
     await page.evaluate(() => {
-      const closeBtn = document.querySelector('.zhihu-explore-close-btn') as HTMLElement;
-      closeBtn?.click();
+      window.postMessage({ type: '__ZHIHU_EXPLORE_TEST_CLEAR_TREES__' }, '*');
     });
 
-    // Remove anchor marks cleanly
-    await page.evaluate(() => {
-      const marks = document.querySelectorAll('.zhihu-explore-anchor-mark');
-      marks.forEach((m) => {
-        const text = m.getAttribute('data-original-text') || m.textContent || '';
-        m.replaceWith(document.createTextNode(text));
-      });
-      document.querySelectorAll('.zhihu-explore-anchor-badge').forEach((b) => b.remove());
-      // Normalize to merge adjacent text nodes
-      document.querySelector('#p1')?.normalize();
-    });
+    // All marks and badges must be gone via real clearAnchors()
+    await expect(page.locator('.zhihu-explore-anchor-mark')).toHaveCount(0, { timeout: 5000 });
+    await expect(page.locator('.zhihu-explore-anchor-badge')).toHaveCount(0, { timeout: 5000 });
 
-    // Text of #p1 must be 100% identical to originalText
+    // InnerHTML must preserve <strong> tag intact, and textContent must be 100% identical byte-for-byte
+    const restoredHtml = await page.locator('#p1').evaluate((el) => el.innerHTML);
     const restoredText = await page.locator('#p1').evaluate((el) => el.textContent);
+    expect(restoredHtml).toBe(originalHtml);
     expect(restoredText).toBe(originalText);
 
     await page.close();
