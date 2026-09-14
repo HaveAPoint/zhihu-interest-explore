@@ -166,7 +166,7 @@ test.describe('Milestones M2~M4: Followup Selection, Arrow, Long-press & Host La
 
     await page.mouse.move(box3!.x + box3!.width / 2, box3!.y + box3!.height / 2);
     await page.mouse.down();
-    await page.waitForTimeout(450);
+    await page.waitForTimeout(500);
     await expect(deleteBar).toBeVisible();
     await expect(ghost).toBeVisible();
 

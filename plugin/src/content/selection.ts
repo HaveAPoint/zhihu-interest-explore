@@ -1,5 +1,16 @@
 // Selection capture and floating explore trigger button
-// Complies with 作者本人开发计划 §4.1, T18
+// Complies with 作者本人开发计划 §4.1, T18; 插件局部树执行计划 §3.4
+
+import { getRangeOffsets } from './text-range.js';
+
+/** Same container resolution as AnchorManager so captured offsets and restored anchors agree. */
+export function findArticleContentContainer(): HTMLElement | null {
+  return (
+    (document.querySelector('.Post-RichText') as HTMLElement | null) ||
+    (document.querySelector('.RichText') as HTMLElement | null) ||
+    (document.querySelector('article') as HTMLElement | null)
+  );
+}
 
 export interface CapturedSelection {
   highlight_text: string;
@@ -86,12 +97,6 @@ export class SelectionManager {
       return;
     }
 
-    const text = sel.toString().trim();
-    if (!text || text.length < 2) {
-      this.hideButton();
-      return;
-    }
-
     const range = sel.getRangeAt(0);
 
     // Make sure selection is within Zhihu content container, not inside overlay or comments
@@ -105,18 +110,26 @@ export class SelectionManager {
       return;
     }
 
-    // Find enclosing paragraph or block
+    // Selection must live inside the article content container — offsets are relative to it,
+    // and AnchorManager restores against the same container (§3.4).
+    const contentContainer = findArticleContentContainer();
+    if (!contentContainer || !contentContainer.contains(range.commonAncestorContainer)) {
+      this.hideButton();
+      return;
+    }
+
+    // Exact UTF-16 offsets of the actual selected Range. Non-empty single character is valid;
+    // exact text is taken from the DOM (not from sel.toString().trim()) so it matches on restore.
+    const offsets = getRangeOffsets(contentContainer, range);
+    if (!offsets) {
+      this.hideButton();
+      return;
+    }
+
+    // Find enclosing paragraph or block for the "原文说的是" quote
     let paragraphEl = element.closest('p, div.RichText > *, blockquote, li');
     if (!paragraphEl) paragraphEl = element;
-
-    const fullParagraphText = paragraphEl.textContent?.trim() || text;
-    const highlightIndex = fullParagraphText.indexOf(text);
-
-    const prefix = highlightIndex > 0 ? fullParagraphText.slice(Math.max(0, highlightIndex - 20), highlightIndex) : '';
-    const suffix =
-      highlightIndex >= 0 && highlightIndex + text.length < fullParagraphText.length
-        ? fullParagraphText.slice(highlightIndex + text.length, highlightIndex + text.length + 20)
-        : '';
+    const fullParagraphText = paragraphEl.textContent?.trim() || offsets.exact;
 
     const rect = range.getBoundingClientRect();
     if (rect.width === 0 && rect.height === 0) {
@@ -125,12 +138,12 @@ export class SelectionManager {
     }
 
     this.currentSelection = {
-      highlight_text: text,
+      highlight_text: offsets.exact,
       anchor_paragraph: fullParagraphText,
-      prefix,
-      suffix,
-      start_offset: Math.max(0, highlightIndex),
-      end_offset: Math.max(0, highlightIndex) + text.length,
+      prefix: offsets.prefix,
+      suffix: offsets.suffix,
+      start_offset: offsets.startOffset,
+      end_offset: offsets.endOffset,
       boundingRect: rect,
       range: range.cloneRange(),
     };

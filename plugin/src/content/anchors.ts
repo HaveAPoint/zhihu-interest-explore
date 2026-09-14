@@ -1,9 +1,12 @@
 // Anchor restoration and deep-link handling in Zhihu article content
-// Complies with 作者本人开发计划 §4.1, T22
+// Complies with 作者本人开发计划 §4.1, T22; 插件局部树执行计划 §3.4, §3.5, LT10
 
 import { HIGHLIGHT_BG } from '@zhihu-explore/ui-tokens';
 import type { LocalTree, HighlightAnchor } from '@zhihu-explore/contracts';
-import { findRangeForAnchor } from './text-range.js';
+import { findRangeForAnchor, getTextNodes } from './text-range.js';
+
+const MARK_CLASS = 'zhihu-explore-anchor-mark';
+const BADGE_CLASS = 'zhihu-explore-anchor-badge';
 
 export class AnchorManager {
   private treesByRootId = new Map<string, LocalTree>();
@@ -22,21 +25,42 @@ export class AnchorManager {
     this.checkDeepLink();
   }
 
-  private renderAnchors() {
-    // 1. Clean up previously injected badges (outside marks, must be removed first)
-    document.querySelectorAll('.zhihu-explore-anchor-badge').forEach((el) => {
-      el.remove();
-    });
+  /**
+   * Live Range spanning the restored highlight of a tree (first mark start → last mark end),
+   * or null if the anchor could not be located on this page.
+   */
+  getRootRange(treeId: string): Range | null {
+    const marks = Array.from(
+      document.querySelectorAll<HTMLElement>(`.${MARK_CLASS}[data-tree-id="${treeId}"]`),
+    );
+    if (marks.length === 0) return null;
+    const range = document.createRange();
+    range.setStartBefore(marks[0]!.firstChild ?? marks[0]!);
+    const last = marks[marks.length - 1]!;
+    range.setEndAfter(last.lastChild ?? last);
+    return range;
+  }
 
-    // 2. Clean up previously injected marks — restore original text only
-    document.querySelectorAll('.zhihu-explore-anchor-mark').forEach((el) => {
+  /** Remove every mark/badge this manager injected; article text is restored byte-for-byte. */
+  private clearAnchors() {
+    document.querySelectorAll(`.${BADGE_CLASS}`).forEach((el) => el.remove());
+
+    const touchedParents = new Set<Node>();
+    document.querySelectorAll(`.${MARK_CLASS}`).forEach((el) => {
       const parent = el.parentNode;
-      if (parent) {
-        const originalText = el.getAttribute('data-original-text') || '';
-        parent.replaceChild(document.createTextNode(originalText), el);
-        parent.normalize();
+      if (!parent) return;
+      // Each mark wraps exactly one original text node segment; unwrap it in place.
+      while (el.firstChild) {
+        parent.insertBefore(el.firstChild, el);
       }
+      parent.removeChild(el);
+      touchedParents.add(parent);
     });
+    touchedParents.forEach((p) => p.normalize());
+  }
+
+  private renderAnchors() {
+    this.clearAnchors();
 
     const contentContainer =
       document.querySelector('.Post-RichText') ||
@@ -49,44 +73,29 @@ export class AnchorManager {
       const highlight = tree.anchor_highlight;
       if (!highlight || highlight.length < 1) continue;
 
-      // Build a HighlightAnchor from the root node if available, otherwise fall back to basic exact match
+      // Prefer the root node's precise anchor (offsets + context); fall back to exact-only.
       const rootNode = tree.nodes.find((n) => n.id === tree.root_node_id);
       const anchor: HighlightAnchor = rootNode?.highlight_anchor ?? { exact: highlight };
 
-      // Use findRangeForAnchor for precise, disambiguated positioning
+      // Ambiguous / not found → no mark rather than a wrong one (§3.4).
       const range = findRangeForAnchor(contentContainer as HTMLElement, anchor);
       if (!range) continue;
 
-      // Wrap the range in a mark element
-      const rangeText = range.toString();
-      const mark = document.createElement('mark');
-      mark.className = 'zhihu-explore-anchor-mark';
-      mark.setAttribute('data-tree-id', tree.id);
-      mark.setAttribute('data-original-text', rangeText);
-      mark.style.cssText = `
-        background: ${HIGHLIGHT_BG};
-        padding: 1px 4px;
-        border-radius: 3px;
-        cursor: pointer;
-        border-bottom: 2px solid #0084ff;
-        position: relative;
-        user-select: text;
-      `;
+      const marks = this.wrapRangeByTextNode(range, tree.id);
+      if (marks.length === 0) continue;
 
-      // Use Range.surroundContents if the range is within a single text node,
-      // otherwise use extractContents + appendChild for cross-node ranges
-      try {
-        range.surroundContents(mark);
-      } catch {
-        // surroundContents throws if range crosses element boundaries
-        mark.appendChild(range.extractContents());
-        range.insertNode(mark);
-      }
+      const open = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.onOpenTreeCallback?.(tree);
+      };
+      for (const mark of marks) mark.onclick = open;
 
-      // Node count badge — placed OUTSIDE the mark as a sibling to prevent text pollution
+      // Node count badge lives OUTSIDE the marks so it can never leak into article text.
       const badge = document.createElement('span');
-      badge.className = 'zhihu-explore-anchor-badge';
+      badge.className = BADGE_CLASS;
       badge.setAttribute('data-tree-id', tree.id);
+      badge.setAttribute('aria-hidden', 'true');
       badge.textContent = `${tree.nodes.length}`;
       badge.style.cssText = `
         font-size: 10px;
@@ -99,30 +108,53 @@ export class AnchorManager {
         display: inline-block;
         vertical-align: middle;
         cursor: pointer;
+        user-select: none;
       `;
-      badge.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.onOpenTreeCallback) {
-          this.onOpenTreeCallback(tree);
-        }
-      };
+      badge.onclick = open;
 
-      // Insert badge after mark
-      if (mark.nextSibling) {
-        mark.parentNode?.insertBefore(badge, mark.nextSibling);
-      } else {
-        mark.parentNode?.appendChild(badge);
-      }
-
-      mark.onclick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (this.onOpenTreeCallback) {
-          this.onOpenTreeCallback(tree);
-        }
-      };
+      const lastMark = marks[marks.length - 1]!;
+      lastMark.parentNode?.insertBefore(badge, lastMark.nextSibling);
     }
+  }
+
+  /**
+   * Wrap a Range in <mark> elements WITHOUT crossing element boundaries: one mark per
+   * intersected text-node segment. Keeps <strong>/<a>/… structure intact so unwrapping
+   * restores the original DOM exactly.
+   */
+  private wrapRangeByTextNode(range: Range, treeId: string): HTMLElement[] {
+    const root = range.commonAncestorContainer;
+    const scope: Node =
+      root.nodeType === Node.TEXT_NODE ? (root.parentNode as Node) : root;
+    const textNodes = getTextNodes(scope).filter((n) => range.intersectsNode(n));
+
+    const marks: HTMLElement[] = [];
+    for (const node of textNodes) {
+      const start = node === range.startContainer ? range.startOffset : 0;
+      const end = node === range.endContainer ? range.endOffset : node.length;
+      if (end <= start) continue;
+
+      let target: Text = node;
+      if (start > 0) target = target.splitText(start);
+      if (end - start < target.length) target.splitText(end - start);
+
+      const mark = document.createElement('mark');
+      mark.className = MARK_CLASS;
+      mark.setAttribute('data-tree-id', treeId);
+      mark.style.cssText = `
+        background: ${HIGHLIGHT_BG};
+        padding: 1px 0;
+        border-radius: 3px;
+        cursor: pointer;
+        border-bottom: 2px solid #0084ff;
+        color: inherit;
+        user-select: text;
+      `;
+      target.parentNode?.insertBefore(mark, target);
+      mark.appendChild(target);
+      marks.push(mark);
+    }
+    return marks;
   }
 
   private checkDeepLink() {
@@ -143,4 +175,3 @@ export class AnchorManager {
     }
   }
 }
-

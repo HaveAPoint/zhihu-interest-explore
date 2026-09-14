@@ -17,6 +17,8 @@ export class ArrowLayer {
   private rafId: number | null = null;
   private boundScheduleUpdate: () => void;
   private scrollContainers: HTMLElement[] = [];
+  private resizeObserver: ResizeObserver | null = null;
+  private observedElements = new Set<Element>();
 
   constructor() {
     this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -50,6 +52,12 @@ export class ArrowLayer {
     this.boundScheduleUpdate = () => this.scheduleUpdate();
     window.addEventListener('resize', this.boundScheduleUpdate, { passive: true });
     window.addEventListener('scroll', this.boundScheduleUpdate, { passive: true });
+
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => {
+        this.scheduleUpdate();
+      });
+    }
   }
 
   private createMarker(id: string, color: string): SVGMarkerElement {
@@ -85,6 +93,23 @@ export class ArrowLayer {
   }
 
   /**
+   * Observe an external element (e.g. drawer, article container) for size changes to trigger arrow updates.
+   */
+  observeElement(el: HTMLElement) {
+    if (this.resizeObserver && !this.observedElements.has(el)) {
+      this.observedElements.add(el);
+      this.resizeObserver.observe(el);
+    }
+  }
+
+  unobserveElement(el: HTMLElement) {
+    if (this.resizeObserver && this.observedElements.has(el)) {
+      this.observedElements.delete(el);
+      this.resizeObserver.unobserve(el);
+    }
+  }
+
+  /**
    * Sets all active arrow connections (multiple branching arrows).
    */
   setConnections(connections: ArrowConnection[]) {
@@ -99,8 +124,19 @@ export class ArrowLayer {
       }
     }
 
-    // Ensure path element exists for each connection
+    // Ensure path element exists for each connection and observe connection elements
     for (const conn of connections) {
+      if (this.resizeObserver) {
+        if (conn.target && !this.observedElements.has(conn.target)) {
+          this.observedElements.add(conn.target);
+          this.resizeObserver.observe(conn.target);
+        }
+        if (conn.source instanceof HTMLElement && !this.observedElements.has(conn.source)) {
+          this.observedElements.add(conn.source);
+          this.resizeObserver.observe(conn.source);
+        }
+      }
+
       if (!this.pathMap.has(conn.id)) {
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('fill', 'none');
@@ -294,6 +330,11 @@ export class ArrowLayer {
       c.removeEventListener('scroll', this.boundScheduleUpdate);
     }
     this.scrollContainers = [];
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+    this.observedElements.clear();
     this.svg.remove();
   }
 }

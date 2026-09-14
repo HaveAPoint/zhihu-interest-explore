@@ -273,7 +273,9 @@ async function init() {
   if (typeof __ENABLE_TEST_HOOKS__ !== 'undefined' && __ENABLE_TEST_HOOKS__) {
     window.addEventListener('message', (event) => {
       if (event.data?.type === '__ZHIHU_EXPLORE_TEST_SHOW_TREE__' && event.data?.tree) {
+        anchorManager.setTrees([event.data.tree]);
         overlay.showForExistingTree(currentArticle!, event.data.tree);
+        overlay.refreshArrows();
       }
     });
   }

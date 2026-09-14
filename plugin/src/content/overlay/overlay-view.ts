@@ -290,6 +290,7 @@ export class OverlayView {
     // 8. Arrow Layer (connects highlight marks to answer cards)
     this.arrowLayer = new ArrowLayer();
     this.arrowLayer.registerScrollContainer(this.bodyEl);
+    this.arrowLayer.observeElement(this.container);
 
     document.body.appendChild(this.container);
   }
@@ -353,7 +354,7 @@ export class OverlayView {
    */
   showForCreatedRoot(tree: LocalTree) {
     this.currentTree = tree;
-    this.currentSelection = null;
+    // Preserve this.currentSelection as immediate arrow source fallback before refreshTrees creates anchor mark DOM
 
     this.viewState = reduceTreeViewState(this.viewState, { type: 'OPEN', tree }, tree);
 
@@ -439,6 +440,7 @@ export class OverlayView {
     this.arrowLayer.clear();
     this.answerSelectionManager.clearPendingSelection();
     this.composerView.clearQuote();
+    this.currentSelection = null;
     this.callbacks.onClose();
   }
 
@@ -546,12 +548,24 @@ export class OverlayView {
     ) as HTMLElement;
 
     if (rootCard) {
-      // Look for anchor mark in article DOM or fallback to captured selection range
-      const articleMark = document.querySelector(
-        `.zhihu-explore-anchor-mark[data-tree-id="${this.currentTree.id}"]`
-      ) as HTMLElement;
+      // Anchor marks in article DOM (may be several when the highlight crosses inline tags);
+      // span them with one Range so the arrow starts at the real highlight. Fall back to the
+      // captured selection range before the anchor exists.
+      const articleMarks = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          `.zhihu-explore-anchor-mark[data-tree-id="${this.currentTree.id}"]`
+        )
+      );
 
-      let rootSource: HTMLElement | Range | null = articleMark;
+      let rootSource: HTMLElement | Range | null = null;
+      if (articleMarks.length === 1) {
+        rootSource = articleMarks[0]!;
+      } else if (articleMarks.length > 1) {
+        const r = document.createRange();
+        r.setStartBefore(articleMarks[0]!);
+        r.setEndAfter(articleMarks[articleMarks.length - 1]!);
+        rootSource = r;
+      }
       if (!rootSource && this.currentSelection?.range && this.currentSelection.range.commonAncestorContainer.isConnected) {
         rootSource = this.currentSelection.range;
       }

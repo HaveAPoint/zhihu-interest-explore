@@ -20,9 +20,11 @@ export function getTextNodes(container: Node): Text[] {
   const textNodes: Text[] = [];
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
-      return node.nodeValue && node.nodeValue.length > 0
-        ? NodeFilter.FILTER_ACCEPT
-        : NodeFilter.FILTER_REJECT;
+      if (!node.nodeValue || node.nodeValue.length === 0) return NodeFilter.FILTER_REJECT;
+      // Plugin-injected chrome (node-count badges) is not article text: it must never shift offsets.
+      const parent = node.parentElement;
+      if (parent && parent.closest('.zhihu-explore-anchor-badge')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
     },
   });
 
