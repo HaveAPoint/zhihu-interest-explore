@@ -4,6 +4,7 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import type {
   LocalTree,
+  LocalNode,
   Article,
   PersonalNode,
   LocalSyncMeta,
@@ -150,6 +151,95 @@ export class PluginStorageRepository {
       tx.done,
     ]);
   }
+
+  /**
+   * Atomically append a new node to an existing tree.
+   *
+   * Reads the current tree, checks both the tree and the parent node still
+   * exist, then writes the updated tree + sync_meta + outbox — all inside
+   * a single readwrite transaction. This eliminates the race window between
+   * "re-read" and "save" that previously allowed a deleted tree to be revived
+   * by a stale followup response.
+   *
+   * @throws Error with code STALE_TREE   - tree was deleted between HTTP call and this transaction
+   * @throws Error with code STALE_PARENT - parent node was removed between HTTP call and this transaction
+   */
+  async appendNodeAtomic(
+    partition: string,
+    treeId: string,
+    parentNodeId: string,
+    buildNode: (currentTree: LocalTree) => LocalNode,
+    buildOutbox: (updatedTree: LocalTree) => OutboxItem,
+  ): Promise<LocalTree> {
+    const db = await this.dbPromise;
+    const tx = db.transaction(['trees', 'sync_meta', 'outbox'], 'readwrite');
+    const treesStore = tx.objectStore('trees');
+    const metaStore = tx.objectStore('sync_meta');
+    const outboxStore = tx.objectStore('outbox');
+
+    // Read current tree INSIDE the transaction
+    const row = await treesStore.get([partition, treeId]);
+    if (!row) {
+      try { tx.abort(); } catch {}
+      await tx.done.catch(() => {});
+      const err = new Error(`STALE_RESPONSE: Tree "${treeId}" was deleted — node discarded.`);
+      (err as any).code = 'STALE_RESPONSE';
+      throw err;
+    }
+
+    const { partition: _p, ...currentTree } = row as any;
+    const tree = currentTree as LocalTree;
+
+    const parentExists = tree.nodes.some((n: any) => n.id === parentNodeId);
+    if (!parentExists) {
+      try { tx.abort(); } catch {}
+      await tx.done.catch(() => {});
+      const err = new Error(`STALE_RESPONSE: Parent "${parentNodeId}" was removed — node discarded.`);
+      (err as any).code = 'STALE_RESPONSE';
+      throw err;
+    }
+
+    const newNode = buildNode(tree);
+    const updatedTree: LocalTree = {
+      ...tree,
+      version: tree.version + 1,
+      nodes: [...tree.nodes, newNode],
+      updated_at: new Date().toISOString(),
+    };
+    const outboxItem = buildOutbox(updatedTree);
+
+    // Read existing sync meta inside the transaction and mark dirty
+    const metaRow = await metaStore.get([partition, treeId]);
+    const existingMeta: LocalSyncMeta = metaRow
+      ? {
+          dirty: metaRow.dirty,
+          partition: metaRow.partition,
+          cloudState: metaRow.cloudState,
+          ackVersion: metaRow.ackVersion,
+          pendingDelete: metaRow.pendingDelete,
+          createSeq: metaRow.createSeq,
+        }
+      : {
+          partition: partition as any,
+          cloudState: 'never_created',
+          ackVersion: null,
+          dirty: true,
+          pendingDelete: false,
+          createSeq: null,
+        };
+
+    const finalMeta: LocalSyncMeta = { ...existingMeta, dirty: true };
+
+    await Promise.all([
+      treesStore.put({ ...updatedTree, partition }),
+      metaStore.put({ ...finalMeta, partition, tree_id: treeId }),
+      outboxStore.put(outboxItem),
+      tx.done,
+    ]);
+
+    return updatedTree;
+  }
+
 
   // --- Sync Meta ---
 

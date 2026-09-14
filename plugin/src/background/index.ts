@@ -30,7 +30,7 @@ let authToken: string | null = null;
 let currentDeviceId = 'device_' + crypto.randomUUID().slice(0, 8);
 const issuedChallenges = new Map<string, number>();
 
-const treeService = new LocalTreeService(repo, currentPartition);
+const treeService = new LocalTreeService(repo, currentPartition, API_ORIGIN, async () => authToken);
 const network = new SyncNetworkClient();
 const syncRunner = new SyncRunner(repo, network, async () => authToken);
 const accountService = new AccountService(repo, syncRunner);
@@ -99,7 +99,7 @@ chrome.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: 
           break;
         }
 
-        case 'GET_TREES_FOR_ARTICLE': {
+        case 'LIST_TREES': {
           const { article_id } = payload;
           const trees = await treeService.listArticleTrees(article_id);
           sendResponse({ success: true, data: trees });
@@ -147,6 +147,18 @@ chrome.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: 
               is_logged_in: !!authToken,
             },
           });
+          break;
+        }
+
+        case 'CHANGE_DISCIPLINE': {
+          const { article_id, discipline_slug, fallback_article } = payload;
+          const updated = await treeService.changeArticleDiscipline(
+            article_id,
+            discipline_slug,
+            fallback_article,
+          );
+          syncRunner.runSync(currentPartition).catch(() => {});
+          sendResponse({ success: true, data: updated });
           break;
         }
 
@@ -209,16 +221,30 @@ chrome.runtime.onMessageExternal.addListener((message: any, sender: any, sendRes
           const trees = await repo.listTrees(currentPartition);
           const personalNodes = await repo.listPersonalNodes(currentPartition);
 
+          // Fetch real article info for each tree in parallel
+          const articleCache = new Map<string, any>();
+          await Promise.all(
+            trees.map(async (t) => {
+              if (!articleCache.has(t.article_id)) {
+                const art = await repo.getArticle(currentPartition, t.article_id);
+                articleCache.set(t.article_id, art);
+              }
+            })
+          );
+
           const snapshotTrees = trees.map((t) => {
             const rootNode = t.nodes.find((n) => n.id === t.root_node_id) ?? t.nodes[0];
+            const art = articleCache.get(t.article_id);
             return {
               tree_id: t.id,
               root_node_id: t.root_node_id,
               article_id: t.article_id,
+              article_title: art?.title ?? '文章记录',
+              article_url: art?.url ?? null,
+              article_zhihu_id: art?.zhihu_id ?? null,
               discipline_slug: t.discipline_slug,
               global_node_id: t.global_node_id,
               root_title: rootNode?.title ?? '探索概念',
-              article_title: '文章记录',
               version: t.version,
               node_count: t.nodes.length,
               created_at: t.created_at,

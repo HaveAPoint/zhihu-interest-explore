@@ -1,0 +1,4 @@
+#!/bin/bash
+export PORT=9000
+export HOST=0.0.0.0
+exec node dist/src/index.js

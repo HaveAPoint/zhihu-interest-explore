@@ -1,0 +1,26 @@
+{
+  "envId": "hackerson-d0g0z55d2fc446485",
+  "version": "2.0",
+  "$schema": "https://framework-1258016615.tcloudbaseapp.com/schema/latest.json",
+  "framework": {},
+  "functions": [
+    {
+      "name": "explore-api",
+      "type": "http",
+      "runtime": "Nodejs18",
+      "path": "server",
+      "handler": "dist/src/index.js",
+      "timeout": 60,
+      "memory": 256,
+      "installDependency": true,
+      "ignore": [
+        "node_modules",
+        "node_modules/**",
+        "*.log"
+      ]
+    }
+  ],
+  "hosting": {
+    "localPath": "dist/web"
+  }
+}

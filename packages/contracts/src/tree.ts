@@ -89,6 +89,8 @@ export const CreateTreeInputSchema = z.object({
     tags: z.array(z.string()),
     url: z.string(),
     content_text: z.string(),
+    // Pass the pre-classified discipline so server does not default to agent-app-dev
+    discipline_slug: DisciplineSlugSchema.optional(),
   }).optional(),
   local_tree_context: z.any().optional(), // full tree for generate_only
   history_summary: z.string().max(5000).default(''),

@@ -5,7 +5,7 @@ import { isZhihuZhuanlanPage, extractArticleFromDOM } from './zhihu-adapter.js';
 import { SelectionManager, type CapturedSelection } from './selection.js';
 import { OverlayView } from './overlay/overlay-view.js';
 import { AnchorManager } from './anchors.js';
-import type { Article, LocalTree } from '@zhihu-explore/contracts';
+import type { Article, LocalTree, DisciplineSlug } from '@zhihu-explore/contracts';
 
 async function init() {
   if (!isZhihuZhuanlanPage()) {
@@ -19,28 +19,43 @@ async function init() {
     return;
   }
 
-  // Resolve article with background worker
+  // 1. Resolve Article with Background Service
   let currentArticle: Article | null = null;
-  try {
-    const res = await chrome.runtime.sendMessage({
-      type: 'ARTICLE_RESOLVE',
-      payload: {
-        zhihu_id: articleInfo.zhihu_id,
-        url: articleInfo.url,
-        title: articleInfo.title,
-        tags: articleInfo.tags,
-        lead: articleInfo.lead,
-        content_text: articleInfo.content_text,
-      },
-    });
+  let classifyError: string | null = null;
 
-    if (res?.success) {
-      currentArticle = res.data;
+  async function tryResolveArticle(): Promise<boolean> {
+    if (!articleInfo) return false;
+    try {
+      const res = await chrome.runtime.sendMessage({
+        type: 'ARTICLE_RESOLVE',
+        payload: {
+          zhihu_id: articleInfo.zhihu_id,
+          url: articleInfo.url,
+          title: articleInfo.title,
+          tags: articleInfo.tags,
+          lead: articleInfo.lead,
+          content_text: articleInfo.content_text,
+        },
+      });
+
+      if (res?.success && res.data) {
+        currentArticle = res.data;
+        classifyError = null;
+        return true;
+      } else {
+        classifyError = res?.error || '分类服务暂时不可用';
+        return false;
+      }
+    } catch (err: any) {
+      console.error('[zhihu-explore] Failed to resolve article with background', err);
+      classifyError = err?.message || '网络连接异常，无法获取学科分类';
+      return false;
     }
-  } catch (err) {
-    console.error('[zhihu-explore] Failed to resolve article with background', err);
   }
 
+  await tryResolveArticle();
+
+  // If classification failed or returned null, preserve real content_text and set discipline_slug to null (never fake agent-app-dev)
   if (!currentArticle) {
     currentArticle = {
       id: crypto.randomUUID(),
@@ -50,8 +65,8 @@ async function init() {
       title: articleInfo.title,
       tags: articleInfo.tags,
       lead: articleInfo.lead,
-      content_text: '',
-      discipline_slug: 'agent-app-dev',
+      content_text: articleInfo.content_text,
+      discipline_slug: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -75,14 +90,15 @@ async function init() {
     }
   }
 
-  await refreshTrees();
-
   let pendingSelection: CapturedSelection | null = null;
 
   // Initialize Overlay View
   const overlay = new OverlayView({
     onSubmitQuestion: async (question: string) => {
       if (!pendingSelection) return;
+      if (!currentArticle?.discipline_slug) {
+        throw new Error('请先在上方选择所属学科以挂载知识图谱');
+      }
 
       const res = await chrome.runtime.sendMessage({
         type: 'CREATE_TREE',
@@ -155,19 +171,57 @@ async function init() {
       selectionManager.clear();
       pendingSelection = null;
     },
+
+    onSelectDiscipline: async (slug: DisciplineSlug) => {
+      if (!currentArticle) return;
+      currentArticle = {
+        ...currentArticle,
+        discipline_slug: slug,
+        updated_at: new Date().toISOString(),
+      };
+      await chrome.runtime.sendMessage({
+        type: 'CHANGE_DISCIPLINE',
+        payload: {
+          article_id: currentArticle.id,
+          discipline_slug: slug,
+          fallback_article: currentArticle,
+        },
+      });
+      overlay.updateArticle(currentArticle);
+    },
+
+    onRetryClassify: async () => {
+      const ok = await tryResolveArticle();
+      if (ok && currentArticle) {
+        overlay.setClassifyError(null);
+        overlay.updateArticle(currentArticle);
+        await refreshTrees();
+      } else {
+        overlay.setClassifyError(classifyError);
+      }
+    },
   });
 
-  // Clicking an anchor in article reopens overlay
+  if (classifyError) {
+    overlay.setClassifyError(classifyError);
+  }
+
+  // Register onOpenTree BEFORE refreshTrees so checkDeepLink finds the callback.
+  // Fix: deep-link timing race — explore_tree param was cleared before overlay was ready.
   anchorManager.onOpenTree((tree) => {
     overlay.showForExistingTree(currentArticle!, tree);
   });
 
   // Initialize Selection Manager
+  // Declared with let before overlay construction so the onClose closure can reference it.
   const selectionManager = new SelectionManager();
   selectionManager.onTrigger((selection) => {
     pendingSelection = selection;
     overlay.showForNewSelection(currentArticle!, selection);
   });
+
+  // Load trees after callbacks are registered so deep-link opens correctly
+  await refreshTrees();
 
   console.log('[zhihu-explore] Content script ready on article:', currentArticle?.title);
 }

@@ -74,8 +74,14 @@ export const treeRoutes: FastifyPluginAsync = async (app) => {
     } = parsed.data;
 
     // Get article info (either from DB or local_article)
-    let articleInfo = local_article;
-    let disciplineSlug = 'agent-app-dev';
+    let articleInfo = local_article ? {
+      title: local_article.title,
+      tags: local_article.tags,
+      url: local_article.url,
+      content_text: local_article.content_text,
+    } : null;
+    // Prefer discipline from local_article (pre-classified by plugin), then DB, then default
+    let disciplineSlug: string = local_article?.discipline_slug ?? 'agent-app-dev';
     if (!articleInfo) {
       const artRes = await query(
         'SELECT title, tags, url, content_text, discipline_slug FROM articles WHERE id = $1',
@@ -89,7 +95,10 @@ export const treeRoutes: FastifyPluginAsync = async (app) => {
           url: row.url,
           content_text: row.content_text,
         };
-        disciplineSlug = row.discipline_slug ?? 'agent-app-dev';
+        // Only use DB discipline if not already provided by local_article
+        if (!local_article?.discipline_slug) {
+          disciplineSlug = row.discipline_slug ?? 'agent-app-dev';
+        }
       } else {
         articleInfo = {
           title: '未知文章',
@@ -211,13 +220,17 @@ export const treeRoutes: FastifyPluginAsync = async (app) => {
       });
     }
 
-    const { node_id, parent_id, highlight_text, question_text, mode, local_article } = parsed.data;
+    const { node_id, parent_id, highlight_text, question_text, mode, local_article, local_tree_context } = parsed.data;
 
-    let tree: LocalTree | null = null;
-    try {
-      tree = await repo.getTree(treeId, uid);
-    } catch {
-      // Ignore if DB not reachable in generate_only mode
+    // Prefer local_tree_context (full plugin-side fork tree) over DB lookup.
+    // In generate_only mode the DB may not have the tree; local_tree_context is authoritative.
+    let tree: LocalTree | null = local_tree_context as LocalTree | null ?? null;
+    if (!tree) {
+      try {
+        tree = await repo.getTree(treeId, uid);
+      } catch {
+        // Ignore if DB not reachable in generate_only mode
+      }
     }
 
     if (!tree && mode !== 'generate_only') {
@@ -234,14 +247,17 @@ export const treeRoutes: FastifyPluginAsync = async (app) => {
     const parentNode = tree?.nodes.find((n) => n.id === parent_id);
     const answerOriginal = parentNode ? parentNode.answer_extra : highlight_text;
 
-    // Call Agent followup
+    // Build article context: prefer local_article (plugin sends full content_text)
+    const articleContext = local_article ?? {
+      title: '',
+      tags: [],
+      url: '',
+      content_text: highlight_text, // last resort: just the highlight
+    };
+
+    // Call Agent followup with full tree context
     const agentOutput = await generateFollowup({
-      article: local_article ?? {
-        title: '',
-        tags: [],
-        url: '',
-        content_text: highlight_text,
-      },
+      article: articleContext,
       tree: {
         nodes: (tree?.nodes ?? []).map((n) => ({
           id: n.id,

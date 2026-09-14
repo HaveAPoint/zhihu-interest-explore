@@ -206,8 +206,14 @@ export class DataSourceResolver {
           tree_id: t.tree_id,
           root_node_id: t.root_node_id,
           article_id: t.article_id,
-          article_title: t.article_title,
-          article_url: `https://zhuanlan.zhihu.com/p/${t.article_id}`,
+          article_title: t.article_title ?? '文章记录',
+          // Use real article URL from snapshot; fall back to zhihu_id-based URL.
+          // Never use internal UUID (article_id) as a zhihu path — that causes 404.
+          article_url:
+            t.article_url ||
+            (t.article_zhihu_id
+              ? `https://zhuanlan.zhihu.com/p/${t.article_zhihu_id}`
+              : null),
           root_title: t.root_title,
           created_at: t.created_at,
         })),

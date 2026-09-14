@@ -25,7 +25,10 @@
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:seed": "tsx scripts/db-seed.ts",
     "package:release": "tsx scripts/package-release.ts",
-    "release:check": "tsx scripts/release-check.ts"
+    "release:check": "tsx scripts/release-check.ts",
+    "deploy:api": "tsx scripts/deploy-api.ts",
+    "deploy:web": "tsx scripts/deploy-web.ts",
+    "smoke:cloud": "tsx scripts/smoke-cloud.ts"
   },
   "devDependencies": {
     "@cloudbase/cli": "^3.8.0",
