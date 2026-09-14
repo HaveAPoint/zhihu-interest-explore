@@ -31,7 +31,7 @@ let currentDeviceId = 'device_' + crypto.randomUUID().slice(0, 8);
 const issuedChallenges = new Map<string, number>();
 
 const treeService = new LocalTreeService(repo, currentPartition, API_ORIGIN, async () => authToken);
-const network = new SyncNetworkClient();
+const network = new SyncNetworkClient({ apiOrigin: API_ORIGIN });
 const syncRunner = new SyncRunner(repo, network, async () => authToken);
 const accountService = new AccountService(repo, syncRunner);
 
@@ -103,6 +103,29 @@ chrome.runtime.onMessage.addListener((message: any, _sender: any, sendResponse: 
           const { article_id } = payload;
           const trees = await treeService.listArticleTrees(article_id);
           sendResponse({ success: true, data: trees });
+          break;
+        }
+
+        case 'GET_TREE': {
+          const { tree_id } = payload;
+          const tree = await repo.getTree(currentPartition, tree_id);
+          sendResponse({ success: true, data: tree });
+          break;
+        }
+
+        case 'RENAME_NODE': {
+          const { tree_id, node_id, new_title } = payload;
+          const updatedTree = await treeService.renameNode(tree_id, node_id, new_title);
+          syncRunner.runSync(currentPartition).catch(() => {});
+          sendResponse({ success: true, data: updatedTree });
+          break;
+        }
+
+        case 'BIND_TREE': {
+          const { tree_id, global_node_id } = payload;
+          const updatedTree = await treeService.setTreeBinding(tree_id, global_node_id);
+          syncRunner.runSync(currentPartition).catch(() => {});
+          sendResponse({ success: true, data: updatedTree });
           break;
         }
 

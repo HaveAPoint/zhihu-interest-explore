@@ -53,15 +53,18 @@ export function extractArticleFromDOM(): ExtractedZhihuArticle | null {
   let content_text = '';
 
   if (container) {
-    const paragraphs = Array.from(container.querySelectorAll('p')).filter(
-      (p) => !p.closest('.zhihu-explore-container')
-    );
+    // Clone container to sanitize and prevent plugin badge text polluting content_text (§3.7)
+    const clone = container.cloneNode(true) as HTMLElement;
+    const pluginElements = clone.querySelectorAll('[class*="zhihu-explore"]');
+    pluginElements.forEach((el) => el.remove());
+
+    const paragraphs = Array.from(clone.querySelectorAll('p'));
 
     if (paragraphs.length > 0) {
       lead = paragraphs[0]?.textContent?.trim() || '';
       content_text = paragraphs.map((p) => p.textContent?.trim()).filter(Boolean).join('\n\n');
     } else {
-      content_text = container.innerText || container.textContent || '';
+      content_text = clone.innerText || clone.textContent || '';
       lead = content_text.slice(0, 150);
     }
   }

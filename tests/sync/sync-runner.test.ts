@@ -165,7 +165,7 @@ describe('T15 & T16: SyncRunner Execution Engine & Network Verification', () => 
   beforeEach(() => {
     const dbName = 'test_sync_db_' + crypto.randomUUID();
     repo = new PluginStorageRepository(dbName);
-    spyNetwork = new SpySyncNetworkClient();
+    spyNetwork = new SpySyncNetworkClient({ apiOrigin: 'http://localhost:9000' });
     syncRunner = new SyncRunner(repo, spyNetwork, async () => authToken);
   });
 

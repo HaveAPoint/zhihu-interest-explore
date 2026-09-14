@@ -5,7 +5,10 @@ import { isZhihuZhuanlanPage, extractArticleFromDOM } from './zhihu-adapter.js';
 import { SelectionManager, type CapturedSelection } from './selection.js';
 import { OverlayView } from './overlay/overlay-view.js';
 import { AnchorManager } from './anchors.js';
-import type { Article, LocalTree, DisciplineSlug } from '@zhihu-explore/contracts';
+import type { Article, LocalTree, DisciplineSlug, HighlightAnchor } from '@zhihu-explore/contracts';
+import { removeSubtree } from '@zhihu-explore/domain';
+
+declare const __ENABLE_TEST_HOOKS__: boolean | undefined;
 
 async function init() {
   if (!isZhihuZhuanlanPage()) {
@@ -95,10 +98,19 @@ async function init() {
   // Initialize Overlay View
   const overlay = new OverlayView({
     onSubmitQuestion: async (question: string) => {
-      if (!pendingSelection) return;
-      if (!currentArticle?.discipline_slug) {
+      if (!pendingSelection || !currentArticle) return;
+      if (!currentArticle.discipline_slug) {
         throw new Error('请先在上方选择所属学科以挂载知识图谱');
       }
+
+      const session = overlay.getViewSession();
+      const anchor: HighlightAnchor = {
+        exact: pendingSelection.highlight_text,
+        prefix: pendingSelection.prefix,
+        suffix: pendingSelection.suffix,
+        start_offset: pendingSelection.start_offset,
+        end_offset: pendingSelection.end_offset,
+      };
 
       const res = await chrome.runtime.sendMessage({
         type: 'CREATE_TREE',
@@ -106,6 +118,7 @@ async function init() {
           article: currentArticle,
           anchor_paragraph: pendingSelection.anchor_paragraph,
           anchor_highlight: pendingSelection.highlight_text,
+          highlight_anchor: anchor,
           question_text: question,
           skeletons: [],
         },
@@ -113,15 +126,23 @@ async function init() {
 
       if (res?.success) {
         const createdTree: LocalTree = res.data;
-        overlay.updateTree(createdTree);
+        const currentSession = overlay.getViewSession();
+        // Session isolation (§3.7): discard if overlay was closed or switched
+        if (currentSession.sessionId !== session.sessionId) {
+          return;
+        }
+        overlay.showForCreatedRoot(createdTree);
         await refreshTrees();
+        // Arrow layer needs anchor marks which are created by refreshTrees
+        overlay.refreshArrows();
       } else {
         throw new Error(res?.error || 'Failed to create tree');
       }
     },
 
-    onFollowupQuestion: async (parentNodeId: string, highlight: string, question: string) => {
-      const activeTreeId = (overlay as any).currentTree?.id;
+    onFollowupQuestion: async (parentNodeId: string, highlight: string, question: string, anchor?: HighlightAnchor) => {
+      const session = overlay.getViewSession();
+      const activeTreeId = session.treeId;
       if (!activeTreeId) return;
 
       const res = await chrome.runtime.sendMessage({
@@ -130,30 +151,44 @@ async function init() {
           tree_id: activeTreeId,
           parent_id: parentNodeId,
           highlight_text: highlight,
+          highlight_anchor: anchor,
           question_text: question,
         },
       });
 
       if (res?.success) {
+        const newNode = res.data;
         // Fetch updated tree
         const treeRes = await chrome.runtime.sendMessage({
           type: 'GET_TREE',
           payload: { tree_id: activeTreeId },
         });
-        if (treeRes?.success) {
-          overlay.updateTree(treeRes.data);
+        const currentSession = overlay.getViewSession();
+        // Session & tree isolation (§3.7)
+        if (currentSession.sessionId !== session.sessionId || currentSession.treeId !== activeTreeId) {
+          return;
+        }
+        if (treeRes?.success && treeRes.data) {
+          overlay.appendFollowupNode(treeRes.data, newNode?.id || '');
         }
         await refreshTrees();
+        overlay.refreshArrows();
       } else {
         throw new Error(res?.error || 'Failed to add node');
       }
     },
 
     onDeleteNode: async (treeId: string, nodeId: string) => {
+      const session = overlay.getViewSession();
       const res = await chrome.runtime.sendMessage({
         type: 'DELETE_NODE',
         payload: { tree_id: treeId, node_id: nodeId },
       });
+
+      const currentSession = overlay.getViewSession();
+      if (currentSession.sessionId !== session.sessionId || currentSession.treeId !== treeId) {
+        return;
+      }
 
       if (res?.success) {
         if (res.data?.deleted === 'tree') {
@@ -163,6 +198,17 @@ async function init() {
         }
         await refreshTrees();
       } else {
+        // Fallback for in-memory / test-injected trees
+        const inMemoryTree = overlay.getCurrentTree();
+        if (inMemoryTree && inMemoryTree.id === treeId) {
+          const updated = removeSubtree(inMemoryTree, nodeId);
+          if (!updated) {
+            overlay.close();
+          } else {
+            overlay.updateTree(updated);
+          }
+          return;
+        }
         alert(res?.error || '删除失败');
       }
     },
@@ -222,6 +268,15 @@ async function init() {
 
   // Load trees after callbacks are registered so deep-link opens correctly
   await refreshTrees();
+
+  // Test hook for Playwright / browser testing (only included in test builds)
+  if (typeof __ENABLE_TEST_HOOKS__ !== 'undefined' && __ENABLE_TEST_HOOKS__) {
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === '__ZHIHU_EXPLORE_TEST_SHOW_TREE__' && event.data?.tree) {
+        overlay.showForExistingTree(currentArticle!, event.data.tree);
+      }
+    });
+  }
 
   console.log('[zhihu-explore] Content script ready on article:', currentArticle?.title);
 }

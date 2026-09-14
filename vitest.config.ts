@@ -11,6 +11,7 @@ export default defineConfig({
             'packages/*/tests/**/*.test.ts',
             'server/src/**/*.test.ts',
             'tests/sync/**/*.test.ts',
+            'tests/local-tree/**/*.test.ts',
           ],
         },
       },

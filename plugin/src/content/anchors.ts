@@ -2,7 +2,8 @@
 // Complies with 作者本人开发计划 §4.1, T22
 
 import { HIGHLIGHT_BG } from '@zhihu-explore/ui-tokens';
-import type { LocalTree } from '@zhihu-explore/contracts';
+import type { LocalTree, HighlightAnchor } from '@zhihu-explore/contracts';
+import { findRangeForAnchor } from './text-range.js';
 
 export class AnchorManager {
   private treesByRootId = new Map<string, LocalTree>();
@@ -22,11 +23,17 @@ export class AnchorManager {
   }
 
   private renderAnchors() {
-    // Clean up previously injected anchors
+    // 1. Clean up previously injected badges (outside marks, must be removed first)
+    document.querySelectorAll('.zhihu-explore-anchor-badge').forEach((el) => {
+      el.remove();
+    });
+
+    // 2. Clean up previously injected marks — restore original text only
     document.querySelectorAll('.zhihu-explore-anchor-mark').forEach((el) => {
       const parent = el.parentNode;
       if (parent) {
-        parent.replaceChild(document.createTextNode(el.textContent || ''), el);
+        const originalText = el.getAttribute('data-original-text') || '';
+        parent.replaceChild(document.createTextNode(originalText), el);
         parent.normalize();
       }
     });
@@ -40,62 +47,81 @@ export class AnchorManager {
 
     for (const tree of this.treesByRootId.values()) {
       const highlight = tree.anchor_highlight;
-      if (!highlight || highlight.length < 2) continue;
+      if (!highlight || highlight.length < 1) continue;
 
-      // Find paragraph containing highlight
-      const walker = document.createTreeWalker(contentContainer, NodeFilter.SHOW_TEXT);
-      let textNode: Text | null = null;
+      // Build a HighlightAnchor from the root node if available, otherwise fall back to basic exact match
+      const rootNode = tree.nodes.find((n) => n.id === tree.root_node_id);
+      const anchor: HighlightAnchor = rootNode?.highlight_anchor ?? { exact: highlight };
 
-      while ((textNode = walker.nextNode() as Text | null)) {
-        if (!textNode || !textNode.textContent) continue;
-        const idx = textNode.textContent.indexOf(highlight);
-        if (idx !== -1) {
-          // Split text node and wrap
-          const matchedText = textNode.splitText(idx);
-          matchedText.splitText(highlight.length);
+      // Use findRangeForAnchor for precise, disambiguated positioning
+      const range = findRangeForAnchor(contentContainer as HTMLElement, anchor);
+      if (!range) continue;
 
-          const mark = document.createElement('mark');
-          mark.className = 'zhihu-explore-anchor-mark';
-          mark.style.cssText = `
-            background: ${HIGHLIGHT_BG};
-            padding: 1px 4px;
-            border-radius: 3px;
-            cursor: pointer;
-            border-bottom: 2px solid #0084ff;
-            position: relative;
-            user-select: text;
-          `;
-          mark.textContent = matchedText.textContent;
+      // Wrap the range in a mark element
+      const rangeText = range.toString();
+      const mark = document.createElement('mark');
+      mark.className = 'zhihu-explore-anchor-mark';
+      mark.setAttribute('data-tree-id', tree.id);
+      mark.setAttribute('data-original-text', rangeText);
+      mark.style.cssText = `
+        background: ${HIGHLIGHT_BG};
+        padding: 1px 4px;
+        border-radius: 3px;
+        cursor: pointer;
+        border-bottom: 2px solid #0084ff;
+        position: relative;
+        user-select: text;
+      `;
 
-          // Node count badge
-          const badge = document.createElement('span');
-          badge.className = 'zhihu-explore-badge';
-          badge.textContent = `${tree.nodes.length}`;
-          badge.style.cssText = `
-            font-size: 10px;
-            background: #0084ff;
-            color: #ffffff;
-            border-radius: 8px;
-            padding: 0 5px;
-            margin-left: 3px;
-            font-weight: 600;
-            display: inline-block;
-            vertical-align: middle;
-          `;
-          mark.appendChild(badge);
-
-          mark.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (this.onOpenTreeCallback) {
-              this.onOpenTreeCallback(tree);
-            }
-          };
-
-          matchedText.parentNode?.replaceChild(mark, matchedText);
-          break; // Found anchor for this tree
-        }
+      // Use Range.surroundContents if the range is within a single text node,
+      // otherwise use extractContents + appendChild for cross-node ranges
+      try {
+        range.surroundContents(mark);
+      } catch {
+        // surroundContents throws if range crosses element boundaries
+        mark.appendChild(range.extractContents());
+        range.insertNode(mark);
       }
+
+      // Node count badge — placed OUTSIDE the mark as a sibling to prevent text pollution
+      const badge = document.createElement('span');
+      badge.className = 'zhihu-explore-anchor-badge';
+      badge.setAttribute('data-tree-id', tree.id);
+      badge.textContent = `${tree.nodes.length}`;
+      badge.style.cssText = `
+        font-size: 10px;
+        background: #0084ff;
+        color: #ffffff;
+        border-radius: 8px;
+        padding: 0 5px;
+        margin-left: 3px;
+        font-weight: 600;
+        display: inline-block;
+        vertical-align: middle;
+        cursor: pointer;
+      `;
+      badge.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.onOpenTreeCallback) {
+          this.onOpenTreeCallback(tree);
+        }
+      };
+
+      // Insert badge after mark
+      if (mark.nextSibling) {
+        mark.parentNode?.insertBefore(badge, mark.nextSibling);
+      } else {
+        mark.parentNode?.appendChild(badge);
+      }
+
+      mark.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (this.onOpenTreeCallback) {
+          this.onOpenTreeCallback(tree);
+        }
+      };
     }
   }
 
@@ -117,3 +143,4 @@ export class AnchorManager {
     }
   }
 }
+

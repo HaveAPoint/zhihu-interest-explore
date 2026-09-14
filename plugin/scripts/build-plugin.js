@@ -8,6 +8,20 @@ const __dirname = path.dirname(__filename);
 const pluginDir = path.resolve(__dirname, '..');
 
 const isWatch = process.argv.includes('--watch');
+const enableTestHooks = process.env.TEST_HOOKS === 'true';
+const isRelease = process.env.RELEASE === 'true';
+
+// In RELEASE mode, API_ORIGIN and APP_ORIGIN must be explicitly provided
+if (isRelease) {
+  if (!process.env.API_ORIGIN || !process.env.APP_ORIGIN) {
+    console.error('❌ RELEASE build requires API_ORIGIN and APP_ORIGIN environment variables.');
+    console.error('   Example: RELEASE=true API_ORIGIN=https://api.example.com APP_ORIGIN=https://app.example.com node scripts/build-plugin.js');
+    process.exit(1);
+  }
+}
+
+const apiOrigin = process.env.API_ORIGIN || 'http://localhost:9000';
+const appOrigin = process.env.APP_ORIGIN || 'http://localhost:5173';
 
 /** @type {import('esbuild').BuildOptions} */
 const commonOptions = {
@@ -18,10 +32,11 @@ const commonOptions = {
   minify: !isWatch,
   logLevel: 'info',
   define: {
-    '__API_ORIGIN__': JSON.stringify(process.env.API_ORIGIN || 'http://localhost:9000'),
-    '__APP_ORIGIN__': JSON.stringify(process.env.APP_ORIGIN || 'http://localhost:5173'),
-    'process.env.API_ORIGIN': JSON.stringify(process.env.API_ORIGIN || 'http://localhost:9000'),
-    'process.env.APP_ORIGIN': JSON.stringify(process.env.APP_ORIGIN || 'http://localhost:5173'),
+    '__API_ORIGIN__': JSON.stringify(apiOrigin),
+    '__APP_ORIGIN__': JSON.stringify(appOrigin),
+    '__ENABLE_TEST_HOOKS__': JSON.stringify(enableTestHooks),
+    'process.env.API_ORIGIN': JSON.stringify(apiOrigin),
+    'process.env.APP_ORIGIN': JSON.stringify(appOrigin),
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
     'process.env': '{}',
   },

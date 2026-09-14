@@ -16,10 +16,10 @@ describe('T25 & T26: Account Isolation, Session Persistence & Guest Claiming', (
   beforeEach(() => {
     const dbName = 'test_db_' + crypto.randomUUID();
     repo = new PluginStorageRepository(dbName);
-    const network = new SyncNetworkClient();
+    const network = new SyncNetworkClient({ apiOrigin: 'http://localhost:9000' });
     syncRunner = new SyncRunner(repo, network, async () => 'mock_token');
     accountService = new AccountService(repo, syncRunner);
-    treeService = new LocalTreeService(repo, 'guest:default');
+    treeService = new LocalTreeService(repo, 'guest:default', 'http://localhost:9000');
   });
 
   afterEach(async () => {

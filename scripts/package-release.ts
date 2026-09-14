@@ -21,12 +21,37 @@ const MANIFEST_PATH = path.join(ROOT_DIR, 'release-manifest.json');
 async function main() {
   console.log('📦 Starting release packaging process...');
 
-  // 1. Build Plugin
-  console.log('1. Building plugin bundles via esbuild...');
+  // Production origins — override via environment or use defaults
+  const apiOrigin = process.env.API_ORIGIN || 'https://zhihu-explore-api.app';
+  const appOrigin = process.env.APP_ORIGIN || 'https://zhihu-interest-explore.web.app';
+
+  // 1. Build Plugin (RELEASE mode enforces no localhost fallback)
+  console.log('1. Building plugin bundles via esbuild (RELEASE mode)...');
   execSync('node plugin/scripts/build-plugin.js', {
     cwd: ROOT_DIR,
     stdio: 'inherit',
+    env: {
+      ...process.env,
+      RELEASE: 'true',
+      API_ORIGIN: apiOrigin,
+      APP_ORIGIN: appOrigin,
+      NODE_ENV: 'production',
+    },
   });
+
+  // Post-build: scan dist for localhost contamination
+  const filesToScan = ['content.js', 'background.js'];
+  for (const fname of filesToScan) {
+    const fpath = path.join(PLUGIN_DIST, fname);
+    if (fs.existsSync(fpath)) {
+      const content = fs.readFileSync(fpath, 'utf-8');
+      if (content.includes('localhost')) {
+        console.error(`❌ FATAL: ${fname} contains "localhost" — release build is contaminated!`);
+        process.exit(1);
+      }
+    }
+  }
+  console.log('   ✅ Production dist verified: no localhost references found.');
 
   // Ensure manifest.json exists in plugin dist
   const distManifest = path.join(PLUGIN_DIST, 'manifest.json');

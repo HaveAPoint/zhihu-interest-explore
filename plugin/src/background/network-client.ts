@@ -22,7 +22,7 @@ export interface SyncCreateResult {
 export class SyncNetworkClient {
   private apiOrigin: string;
 
-  constructor(options: NetworkClientOptions = { apiOrigin: 'http://localhost:9000' }) {
+  constructor(options: NetworkClientOptions) {
     this.apiOrigin = options.apiOrigin.replace(/\/$/, '');
   }
 

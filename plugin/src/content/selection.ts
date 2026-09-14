@@ -65,9 +65,11 @@ export class SelectionManager {
   }
 
   private bindEvents() {
-    document.addEventListener('pointerup', () => {
+    const onUp = () => {
       setTimeout(() => this.handleSelectionChange(), 10);
-    });
+    };
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('mouseup', onUp);
 
     document.addEventListener('selectionchange', () => {
       const sel = window.getSelection();

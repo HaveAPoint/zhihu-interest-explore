@@ -16,6 +16,7 @@ import type {
   PersonalNode,
   DisciplineSlug,
   LocalSyncMeta,
+  HighlightAnchor,
 } from '@zhihu-explore/contracts';
 
 // ---------------------------------------------------------------------------
@@ -181,7 +182,7 @@ export class LocalTreeService {
   constructor(
     private repo: PluginStorageRepository,
     private partition: string = 'guest:default',
-    apiOrigin: string = 'http://localhost:9000',
+    apiOrigin: string,
     // Async token getter: returns device token for logged-in users, null for guests.
     // Used to route classify calls to /guest/classify vs /articles/resolve.
     private getToken: () => Promise<string | null> = async () => null,
@@ -293,6 +294,7 @@ export class LocalTreeService {
     article: Article;
     anchor_paragraph: string;
     anchor_highlight: string;
+    highlight_anchor?: HighlightAnchor;
     question_text: string;
     skeletons: any[]; // kept for signature compat; server loads skeleton from discipline
   }): Promise<LocalTree> {
@@ -339,6 +341,7 @@ export class LocalTreeService {
         tree_id: treeId,
         parent_id: null,
         highlight_text: input.anchor_highlight,
+        highlight_anchor: input.highlight_anchor,
         question_text: input.question_text,
         title: agentOutput.title,
         answer_original: input.anchor_paragraph,
@@ -402,6 +405,7 @@ export class LocalTreeService {
     tree_id: string;
     parent_id: string;
     highlight_text: string;
+    highlight_anchor?: HighlightAnchor;
     question_text: string;
   }): Promise<LocalNode> {
     // Read pre-flight snapshot ONLY to send as context to the server.
@@ -467,6 +471,7 @@ export class LocalTreeService {
           tree_id: input.tree_id,
           parent_id: input.parent_id,
           highlight_text: input.highlight_text,
+          highlight_anchor: input.highlight_anchor,
           question_text: input.question_text,
           title: agentOutput.title,
           // Use current parent's answer_extra (not snapshot's) in case it was edited

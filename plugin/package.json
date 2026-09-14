@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node scripts/build-plugin.js",
+    "build:test": "TEST_HOOKS=true node scripts/build-plugin.js",
     "dev": "node scripts/build-plugin.js --watch"
   },
   "dependencies": {
